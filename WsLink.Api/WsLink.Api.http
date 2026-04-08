@@ -1,0 +1,6 @@
+@WsLink.Api_HostAddress = http://localhost:5191
+
+GET {{WsLink.Api_HostAddress}}/data/upload.php
+Accept: application/json
+
+###

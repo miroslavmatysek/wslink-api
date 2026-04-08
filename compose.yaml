@@ -1,0 +1,7 @@
+﻿services:
+  wslink.api:
+    image: wslink.api
+    build:
+      context: .
+      dockerfile: WsLink.Api/Dockerfile
+

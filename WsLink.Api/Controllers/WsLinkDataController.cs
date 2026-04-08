@@ -1,0 +1,19 @@
+using Microsoft.AspNetCore.Mvc;
+using WsLink.Api.Common;
+using WsLink.Api.Contract;
+
+namespace WsLink.Api.Controllers;
+
+[ApiController]
+[Route("data")]
+public class WsLinkDataController(IWeatherService weatherService, ILogger<WsLinkDataController> logger): ControllerBase
+{
+
+    [HttpGet("upload.php")]
+    [HttpPost("upload.php")]
+    public async Task Get([FromQuery] WsLinkRequestParam requestParam)
+    {
+        logger.LogDebug("Data received [Data: {@Data}]", requestParam);
+        await weatherService.SaveWeatherData(requestParam);
+    }
+}
