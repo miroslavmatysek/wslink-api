@@ -7,6 +7,7 @@ public static class Composition
 {
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.AddHttpClient();
         services.AddScoped<IWeatherService, WeatherService>();
         return services;
     }
