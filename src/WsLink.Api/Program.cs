@@ -15,7 +15,8 @@ public class Program
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
-        builder.Services.AddServices()
+        builder.Services.AddOptions(builder.Configuration)
+            .AddServices()
             .AddHealthChecks();
 
         var app = builder.Build();
