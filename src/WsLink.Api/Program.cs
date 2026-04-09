@@ -1,4 +1,5 @@
 using NLog.Extensions.Logging;
+using NLog.Web;
 
 namespace WsLink.Api;
 
@@ -9,11 +10,11 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-
+        builder.Logging.ClearProviders();
+        builder.Host.UseNLog();
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
-        builder.Services.AddNLog();
         builder.Services.AddServices()
             .AddHealthChecks();
 
