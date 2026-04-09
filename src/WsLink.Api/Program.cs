@@ -14,7 +14,8 @@ public class Program
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
         builder.Services.AddNLog();
-        builder.Services.AddServices();
+        builder.Services.AddServices()
+            .AddHealthChecks();
 
         var app = builder.Build();
 
@@ -24,10 +25,8 @@ public class Program
             app.MapOpenApi();
         }
 
-        app.UseHttpsRedirection();
-
         app.UseAuthorization();
-
+        app.UseHealthChecks("/health");
 
         app.MapControllers();
 
