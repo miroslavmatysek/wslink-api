@@ -21,6 +21,9 @@ public class Program
 
         var app = builder.Build();
 
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -31,7 +34,7 @@ public class Program
         app.UseHealthChecks("/health");
 
         app.MapControllers();
-
+        logger.LogInformation("WsLink.Api try to run [Version: {Version}]", typeof(Program).Assembly.GetName().Version);
         app.Run();
     }
 }

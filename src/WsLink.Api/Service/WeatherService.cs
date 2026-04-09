@@ -1,61 +1,43 @@
-using Microsoft.Extensions.Options;
 using WsLink.Api.Common;
-using WsLink.Api.Common.Config;
+using WsLink.Api.Common.Adapters;
 using WsLink.Api.Contract;
 
 namespace WsLink.Api.Service;
 
-public class WeatherService : IWeatherService
+public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adapterFactory)
+    : IWeatherService
 {
-    private const string DefaultHomeAssistantBaseUrl = "http://homeassistant.local:8123";
-
-    private readonly IHttpClientFactory httpClientFactory;
-    private readonly IOptions<HomeAssistantConfig> options;
-    private readonly ILogger<WeatherService> logger;
-    private readonly Uri webhookUri;
-
-    public WeatherService(IHttpClientFactory httpClientFactory, IOptions<HomeAssistantConfig> options,
-        ILogger<WeatherService> logger)
-    {
-        this.httpClientFactory = httpClientFactory;
-        this.options = options;
-        this.logger = logger;
-
-        var builder = new UriBuilder(options.Value.BaseUrl ?? DefaultHomeAssistantBaseUrl);
-        builder.Path = "api/webhook/" + options.Value.WebhookId;
-        webhookUri = builder.Uri;
-    }
-
-    private const string HomeAssistantClientName = "HomeAssistant";
+    private readonly IReadOnlyCollection<IWeatherAdapter> adapters = adapterFactory.GetWeatherAdapters();
 
     public async Task SaveWeatherData(WsLinkRequestParam requestParam)
     {
-        if (!options.Value.Enabled)
-            return;
-
-        var payload = new HomeAssistantWebhookPayload
+        var payload = new WeatherStationData
         {
-            OutTemperature = Math.Round(requestParam.T1tem, 1),
-            OutHumidity = Math.Round(requestParam.T1hum, 1),
-            InTemperature = Math.Round(requestParam.Intem, 1),
-            InHumanity = Math.Round(requestParam.Inhum, 1),
-            AbsolutePressure = Math.Round(requestParam.Abar, 1),
-            RelativePressure = Math.Round(requestParam.Rbar, 1),
+            OutTemperature = Math.Round(requestParam.OutTemperature1, 1),
+            OutHumidity = Math.Round(requestParam.OutHumanity1, 1),
+            InTemperature = Math.Round(requestParam.InTemperature, 1),
+            InHumanity = Math.Round(requestParam.InHumanity, 1),
+            AbsolutePressure = Math.Round(requestParam.AbsoluteAirPressure, 1),
+            RelativePressure = Math.Round(requestParam.RelativeAirPressure, 1),
+            WindDirection = requestParam.WindDirection1,
+            WindSpeed = Math.Round(requestParam.WindSpeed1, 1),
+            RainRate = Math.Round(requestParam.RainRate, 1),
+            HourlyRainfall = Math.Round(requestParam.HourlyRainfall, 1),
+            DailyRainfall = Math.Round(requestParam.DailyRainfall, 1),
+            WeeklyRainfall = Math.Round(requestParam.WeeklyRainfall, 1),
+            MonthlyRainfall = Math.Round(requestParam.MonthlyRainfall, 1),
+            YearlyRainfall = Math.Round(requestParam.YearlyRainfall, 1),
+            Uvi = Math.Round(requestParam.Uvi, 1),
+            LightIntensity = Math.Round(requestParam.LightIntensity, 1),
+            WindGust = Math.Round(requestParam.WindGust1, 1),
         };
 
-        try
+        logger.LogInformation("Weather data received [Data: {@Payload}]",
+            payload);
+        
+        foreach (var adapter in adapters)
         {
-            var httpClient = httpClientFactory.CreateClient(HomeAssistantClientName);
-            using var response = await httpClient
-                .PostAsJsonAsync(webhookUri, payload)
-                .ConfigureAwait(false);
-
-            logger.LogInformation("HomeAssistantWebhookPayload sent [Payload: {@Payload}, status: {StatusCode}]",
-                payload, response.StatusCode);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error sending HomeAssistantWebhookPayload");
+            await adapter.ProcessWeatherDataAsync(payload);
         }
     }
 }

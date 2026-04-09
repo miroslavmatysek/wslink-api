@@ -1,6 +1,9 @@
-@WsLink.Api_HostAddress = http://localhost:5191
+GET http://localhost:8080/health
+Accept: application/json
 
-GET {{WsLink.Api_HostAddress}}/data/upload.php
+###
+
+GET http://localhost:8080/data/upload.php?wsid=wsabcde123&wspw=a123456789&datetime=2000-01-01+10%3A32%3A25&rbar=1008.8&abar=990.5&intem=25.8&inhum=22&inbat=1&t1tem=38&t1hum=88&t1wdir=359&t1ws=40.1&t1ws10mav=20.9&t1wgust=49.9&t1rainra=20.8&t1rainhr=10&t1raindy=33.5&t1rainwy=15&t1rainmth=30.8&t1rainyr=40.5&t1uvi=8.8&t1solrad=679&t1bat=1&t1cn=1&t234c1tem=35.9&t234c1hum=56&t1feels=&t1chill=38&t1heat=&t1dew=33.9&t1wbgt=42.1
 Accept: application/json
 
 ###

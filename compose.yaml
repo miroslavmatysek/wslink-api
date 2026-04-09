@@ -1,14 +1,39 @@
 ﻿services:
   wslink.api:
-    image: 192.168.88.28:5000/wslink-api:v0.0.1
+    image: 192.168.88.28:5000/wslink-api:v0.0.2
+    #image: wslink-api:v0.0.2
     build:
       context: .
       dockerfile: Dockerfile
+    expose:
+      - "8080"
     ports:
       - "8080:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
+  caddy:
+    image: caddy:2
+    depends_on:
+      - wslink.api
+    expose:
+      - "4443"
+    ports:
+      - "4443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat >/etc/caddy/Caddyfile <<'EOF'
+        192.168.88.28 {
+          reverse_proxy wslink.api:8080
+          tls internal
+        }
+        EOF
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+
+
+volumes:
+  caddy_data:
+  caddy_config:

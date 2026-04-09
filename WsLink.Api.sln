@@ -6,6 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE = LICENSE
 		README.md = README.md
 		Dockerfile = Dockerfile
+		docs\API.pdf = docs\API.pdf
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WsLink.Api", "src\WsLink.Api\WsLink.Api.csproj", "{34031DEE-D4E1-4DF3-AB95-30D0B1E35D34}"
