@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
+using System.Globalization;
 using WsLink.Api.Common.Adapters;
 using WsLink.Api.Common.Config;
 using WsLink.Api.Contract;
@@ -28,7 +29,7 @@ public class WindyWeatherAdapter(
     private DateTime lastUpdate = DateTime.MinValue;
 
     public bool IsEnabled { get; } = windyConfig.Value.Enabled &&
-                                     string.IsNullOrWhiteSpace(windyConfig.Value.StationPassword) &&
+                                     !string.IsNullOrWhiteSpace(windyConfig.Value.StationPassword) &&
                                      !string.IsNullOrWhiteSpace(windyConfig.Value.ApiHost) &&
                                      !string.IsNullOrWhiteSpace(windyConfig.Value.StationId);
 
@@ -74,22 +75,21 @@ public class WindyWeatherAdapter(
         if (string.IsNullOrWhiteSpace(stationId))
             throw new ArgumentNullException(nameof(stationId));
 
-        if (data is null)
-            throw new ArgumentNullException(nameof(data));
+        ArgumentNullException.ThrowIfNull(data);
 
 
         var queryBuilder = new QueryBuilder
         {
             { StationIdQueryParam, Uri.EscapeDataString(stationId) },
-            { WindSpeedQueryParam, data.WindSpeed.ToString("F1") },
-            { WindGustQueryParam, data.WindGust.ToString("F1") },
+            { WindSpeedQueryParam, data.WindSpeed.ToString("F1", CultureInfo.InvariantCulture) },
+            { WindGustQueryParam, data.WindGust.ToString("F1", CultureInfo.InvariantCulture) },
             { WindDirectionQueryParam, data.WindDirection.ToString() },
-            { HumidityQueryParam, data.OutHumidity.ToString("F1") },
-            { PressureQueryParam, data.RelativePressure.ToString("F1") },
-            { UvIndexQueryParam, data.Uvi.ToString("F1") },
-            { SolarRadiationQueryParam, data.LightIntensity.ToString("F1") },
-            { HourlyRainfallQueryParam, data.HourlyRainfall.ToString("F1") },
-            { TemperatureQueryParam, data.InTemperature.ToString("F1") }
+            { HumidityQueryParam, data.OutHumidity.ToString("F1", CultureInfo.InvariantCulture) },
+            { PressureQueryParam, data.RelativePressure.ToString("F1", CultureInfo.InvariantCulture) },
+            { UvIndexQueryParam, data.Uvi.ToString("F1", CultureInfo.InvariantCulture) },
+            { SolarRadiationQueryParam, data.LightIntensity.ToString("F1", CultureInfo.InvariantCulture) },
+            { HourlyRainfallQueryParam, data.HourlyRainfall.ToString("F1", CultureInfo.InvariantCulture) },
+            { TemperatureQueryParam, data.OutTemperature.ToString("F1", CultureInfo.InvariantCulture) }
         };
 
         return queryBuilder.ToString();
