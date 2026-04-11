@@ -17,6 +17,7 @@ public static class Composition
             services.AddSingleton<IAdapterFactory, AdapterFactory>();
 
             services.AddSingleton<IWeatherAdapter, HomeAssistantWeatherAdapter>();
+            services.AddSingleton<IWeatherAdapter, WindyWeatherAdapter>();
             services.AddKeyedSingleton<IWeatherAdapter, DummyWeatherAdapter>("dummyWeatherAdapter");
 
             return services;
@@ -25,6 +26,7 @@ public static class Composition
         public IServiceCollection AddOptions(IConfiguration config)
         {
             services.Configure<HomeAssistantConfig>(config.GetSection(HomeAssistantConfig.ConfigSectionName));
+            services.Configure<WindyConfig>(config.GetSection(WindyConfig.ConfigSectionName));
 
             return services;
         }

@@ -1,4 +1,3 @@
-using NLog.Extensions.Logging;
 using NLog.Web;
 
 namespace WsLink.Api;
@@ -8,6 +7,12 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Configuration
+            .AddJsonFile("appsettings.json", false, true)
+            .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, true)
+            .AddEnvironmentVariables()
+            .Build();
 
         // Add services to the container.
         builder.Logging.ClearProviders();
