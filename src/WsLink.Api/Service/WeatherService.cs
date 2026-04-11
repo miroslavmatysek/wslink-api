@@ -21,6 +21,7 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
             RelativePressure = Math.Round(requestParam.RelativeAirPressure, 1),
             WindDirection = requestParam.WindDirection1,
             WindSpeed = Math.Round(requestParam.WindSpeed1, 1),
+            WindSpeed10MinutesAvg = Math.Round(requestParam.WindSpeed10MinutesAvg, 1),
             RainRate = Math.Round(requestParam.RainRate, 1),
             HourlyRainfall = Math.Round(requestParam.HourlyRainfall, 1),
             DailyRainfall = Math.Round(requestParam.DailyRainfall, 1),

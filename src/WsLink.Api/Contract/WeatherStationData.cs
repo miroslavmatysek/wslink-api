@@ -34,6 +34,9 @@ public class WeatherStationData
     [JsonPropertyName("wind_speed")]
     public double WindSpeed { get; set; }
     
+    [JsonPropertyName("wind_speed_10min")]
+    public double WindSpeed10MinutesAvg { get; set; }
+    
     /// <summary>
     /// Wind gust in m/s.
     /// </summary>

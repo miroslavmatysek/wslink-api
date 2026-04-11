@@ -43,7 +43,7 @@ public class WsLinkRequestParam
     /// <summary>
     /// Direction of the wind in degrees.
     /// </summary>
-    [FromQuery(Name = "t1wind")]
+    [FromQuery(Name = "t1wdir")]
     public int WindDirection1 { get; set; }
     
     /// <summary>
@@ -51,6 +51,9 @@ public class WsLinkRequestParam
     /// </summary>
     [FromQuery(Name = "t1ws")]
     public double WindSpeed1 { get; set; }
+    
+    [FromQuery(Name = "t1ws10mav")]
+    public double WindSpeed10MinutesAvg { get; set; }
     
     /// <summary>
     /// Wind gust in m/s.
