@@ -15,4 +15,9 @@
         <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\WsLink.Business\WsLink.Business.csproj" />
+      <ProjectReference Include="..\WsLink.Common\WsLink.Common.csproj" />
+    </ItemGroup>
+
 </Project>

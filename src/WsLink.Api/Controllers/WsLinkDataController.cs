@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using WsLink.Api.Common;
-using WsLink.Api.Contract;
+using WsLink.Common.Contract;
+using WsLink.Common.Service;
 
 namespace WsLink.Api.Controllers;
 

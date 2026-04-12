@@ -1,6 +1,7 @@
-using WsLink.Api.Common.Adapters;
+using Microsoft.Extensions.DependencyInjection;
+using WsLink.Common.Adapters;
 
-namespace WsLink.Api.Adapters;
+namespace WsLink.Business.Adapters;
 
 public class AdapterFactory(
     IEnumerable<IWeatherAdapter> weatherAdapters,

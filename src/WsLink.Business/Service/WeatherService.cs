@@ -1,8 +1,9 @@
-using WsLink.Api.Common;
-using WsLink.Api.Common.Adapters;
-using WsLink.Api.Contract;
+using Microsoft.Extensions.Logging;
+using WsLink.Common.Adapters;
+using WsLink.Common.Contract;
+using WsLink.Common.Service;
 
-namespace WsLink.Api.Service;
+namespace WsLink.Business.Service;
 
 public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adapterFactory)
     : IWeatherService

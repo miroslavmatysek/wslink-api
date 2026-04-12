@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace WsLink.Api.Contract;
+namespace WsLink.Common.Contract;
 
 public class WsLinkRequestParam
 {

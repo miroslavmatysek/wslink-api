@@ -1,6 +1,6 @@
-using WsLink.Api.Contract;
+using WsLink.Common.Contract;
 
-namespace WsLink.Api.Common.Adapters;
+namespace WsLink.Common.Adapters;
 
 public interface IWeatherAdapter
 {

@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Globalization;
-using WsLink.Api.Common.Adapters;
-using WsLink.Api.Common.Config;
-using WsLink.Api.Contract;
+using WsLink.Common.Adapters;
+using WsLink.Common.Config;
+using WsLink.Common.Contract;
 
-namespace WsLink.Api.Adapters;
+namespace WsLink.Business.Adapters;
 
 public class WindyWeatherAdapter(
     IHttpClientFactory httpClientFactory,

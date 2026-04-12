@@ -1,4 +1,4 @@
-namespace WsLink.Api.Common.Adapters;
+namespace WsLink.Common.Adapters;
 
 public interface IAdapterFactory
 {

@@ -1,9 +1,11 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WsLink.Api.Common.Adapters;
-using WsLink.Api.Common.Config;
-using WsLink.Api.Contract;
+using System.Net.Http.Json;
+using WsLink.Common.Adapters;
+using WsLink.Common.Config;
+using WsLink.Common.Contract;
 
-namespace WsLink.Api.Adapters;
+namespace WsLink.Business.Adapters;
 
 public class HomeAssistantWeatherAdapter : IWeatherAdapter
 {

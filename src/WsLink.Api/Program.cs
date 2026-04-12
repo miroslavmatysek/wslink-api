@@ -1,4 +1,6 @@
 using NLog.Web;
+using WsLink.Business;
+using WsLink.Common;
 
 namespace WsLink.Api;
 
@@ -20,7 +22,8 @@ public class Program
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
-        builder.Services.AddOptions(builder.Configuration)
+        builder.Services
+            .AddConfigOptions(builder.Configuration)
             .AddServices()
             .AddHealthChecks();
 

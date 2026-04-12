@@ -1,7 +1,8 @@
-using WsLink.Api.Common.Adapters;
-using WsLink.Api.Contract;
+using Microsoft.Extensions.Logging;
+using WsLink.Common.Adapters;
+using WsLink.Common.Contract;
 
-namespace WsLink.Api.Adapters;
+namespace WsLink.Business.Adapters;
 
 public class DummyWeatherAdapter(ILogger<DummyWeatherAdapter> logger) : IWeatherAdapter
 {

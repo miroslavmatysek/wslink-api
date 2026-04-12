@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace WsLink.Api.Contract;
+namespace WsLink.Common.Contract;
 
 public class WeatherStationData
 {

@@ -1,6 +1,7 @@
-using WsLink.Api.Contract;
 
-namespace WsLink.Api.Common;
+using WsLink.Common.Contract;
+
+namespace WsLink.Common.Service;
 
 public interface IWeatherService
 {

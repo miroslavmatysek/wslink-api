@@ -1,4 +1,4 @@
-namespace WsLink.Api.Common.Config;
+namespace WsLink.Common.Config;
 
 public class WindyConfig
 {
