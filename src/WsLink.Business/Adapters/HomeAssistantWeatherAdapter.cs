@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using WsLink.Common.Adapters;
 using WsLink.Common.Config;
 using WsLink.Common.Contract;
@@ -11,6 +13,12 @@ public class HomeAssistantWeatherAdapter : IWeatherAdapter
 {
     private const string DefaultHomeAssistantBaseUrl = "http://homeassistant.local:8123";
     private const string HomeAssistantClientName = "HomeAssistant";
+
+    // Missing values are not sent at all, so Home Assistant does not receive them as zeros or nulls.
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
     
     private readonly Uri webhookUri;
     private readonly IHttpClientFactory httpClientFactory;
@@ -36,7 +44,7 @@ public class HomeAssistantWeatherAdapter : IWeatherAdapter
         {
             var httpClient = httpClientFactory.CreateClient(HomeAssistantClientName);
             using var response = await httpClient
-                .PostAsJsonAsync(webhookUri, data)
+                .PostAsJsonAsync(webhookUri, data, SerializerOptions)
                 .ConfigureAwait(false);
 
             logger.LogInformation("HomeAssistantWebhookPayload sent [Payload: {@Payload}, status: {StatusCode}]",

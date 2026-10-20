@@ -10,36 +10,62 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
 {
     private readonly IReadOnlyCollection<IWeatherAdapter> adapters = adapterFactory.GetWeatherAdapters();
 
+    private bool? lastOutSensorConnected;
+
     public async Task SaveWeatherData(WsLinkRequestParam requestParam)
     {
+        // When the outdoor sensor is disconnected, the station does not send valid outdoor values.
+        var outSensorConnected = requestParam.OutSensorConnection != 0;
+        LogOutSensorConnectionChange(outSensorConnected);
+
+        double? Outdoor(double? value) => outSensorConnected ? Round(value) : null;
+
         var payload = new WeatherStationData
         {
-            OutTemperature = Math.Round(requestParam.OutTemperature1, 1),
-            OutHumidity = Math.Round(requestParam.OutHumanity1, 1),
-            InTemperature = Math.Round(requestParam.InTemperature, 1),
-            InHumanity = Math.Round(requestParam.InHumanity, 1),
-            AbsolutePressure = Math.Round(requestParam.AbsoluteAirPressure, 1),
-            RelativePressure = Math.Round(requestParam.RelativeAirPressure, 1),
-            WindDirection = requestParam.WindDirection1,
-            WindSpeed = Math.Round(requestParam.WindSpeed1, 1),
-            WindSpeed10MinutesAvg = Math.Round(requestParam.WindSpeed10MinutesAvg, 1),
-            RainRate = Math.Round(requestParam.RainRate, 1),
-            HourlyRainfall = Math.Round(requestParam.HourlyRainfall, 1),
-            DailyRainfall = Math.Round(requestParam.DailyRainfall, 1),
-            WeeklyRainfall = Math.Round(requestParam.WeeklyRainfall, 1),
-            MonthlyRainfall = Math.Round(requestParam.MonthlyRainfall, 1),
-            YearlyRainfall = Math.Round(requestParam.YearlyRainfall, 1),
-            Uvi = Math.Round(requestParam.Uvi, 1),
-            LightIntensity = Math.Round(requestParam.LightIntensity, 1),
-            WindGust = Math.Round(requestParam.WindGust1, 1),
+            OutSensorConnected = outSensorConnected,
+            OutTemperature = Outdoor(requestParam.OutTemperature1),
+            OutHumidity = Outdoor(requestParam.OutHumanity1),
+            InTemperature = Round(requestParam.InTemperature),
+            InHumanity = Round(requestParam.InHumanity),
+            AbsolutePressure = Round(requestParam.AbsoluteAirPressure),
+            RelativePressure = Round(requestParam.RelativeAirPressure),
+            WindDirection = outSensorConnected ? requestParam.WindDirection1 : null,
+            WindSpeed = Outdoor(requestParam.WindSpeed1),
+            WindSpeed10MinutesAvg = Outdoor(requestParam.WindSpeed10MinutesAvg),
+            RainRate = Outdoor(requestParam.RainRate),
+            HourlyRainfall = Outdoor(requestParam.HourlyRainfall),
+            DailyRainfall = Outdoor(requestParam.DailyRainfall),
+            WeeklyRainfall = Outdoor(requestParam.WeeklyRainfall),
+            MonthlyRainfall = Outdoor(requestParam.MonthlyRainfall),
+            YearlyRainfall = Outdoor(requestParam.YearlyRainfall),
+            Uvi = Outdoor(requestParam.Uvi),
+            LightIntensity = Outdoor(requestParam.LightIntensity),
+            WindGust = Outdoor(requestParam.WindGust1),
         };
 
         logger.LogInformation("Weather data received [Data: {@Payload}]",
             payload);
-        
+
         foreach (var adapter in adapters)
         {
             await adapter.ProcessWeatherDataAsync(payload);
         }
     }
+
+    private void LogOutSensorConnectionChange(bool outSensorConnected)
+    {
+        if (lastOutSensorConnected == outSensorConnected)
+            return;
+
+        if (outSensorConnected)
+            logger.LogInformation("Outdoor sensor is connected");
+        else
+            logger.LogWarning("Outdoor sensor is not connected, outdoor values are ignored");
+
+        lastOutSensorConnected = outSensorConnected;
+    }
+
+    // Non-finite values (e.g. "NaN" in the query) are treated as missing, they cannot be serialized to JSON.
+    private static double? Round(double? value) =>
+        value.HasValue && double.IsFinite(value.Value) ? Math.Round(value.Value, 1) : null;
 }

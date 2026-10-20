@@ -79,20 +79,29 @@ public class WindyWeatherAdapter(
         ArgumentNullException.ThrowIfNull(data);
 
 
-        var queryBuilder = new QueryBuilder
-        {
-            { StationIdQueryParam, Uri.EscapeDataString(stationId) },
-            { WindSpeedQueryParam, data.WindSpeed.ToString("F1", CultureInfo.InvariantCulture) },
-            { WindGustQueryParam, data.WindGust.ToString("F1", CultureInfo.InvariantCulture) },
-            { WindDirectionQueryParam, data.WindDirection.ToString() },
-            { HumidityQueryParam, data.OutHumidity.ToString("F1", CultureInfo.InvariantCulture) },
-            { PressureQueryParam, data.RelativePressure.ToString("F1", CultureInfo.InvariantCulture) },
-            { UvIndexQueryParam, data.Uvi.ToString("F1", CultureInfo.InvariantCulture) },
-            { SolarRadiationQueryParam, data.LightIntensity.ToString("F1", CultureInfo.InvariantCulture) },
-            { HourlyRainfallQueryParam, data.HourlyRainfall.ToString("F1", CultureInfo.InvariantCulture) },
-            { TemperatureQueryParam, data.OutTemperature.ToString("F1", CultureInfo.InvariantCulture) }
-        };
+        var queryBuilder = new QueryBuilder { { StationIdQueryParam, stationId } };
+        AddIfHasValue(queryBuilder, WindSpeedQueryParam, data.WindSpeed);
+        AddIfHasValue(queryBuilder, WindGustQueryParam, data.WindGust);
+        AddIfHasValue(queryBuilder, WindDirectionQueryParam, data.WindDirection);
+        AddIfHasValue(queryBuilder, HumidityQueryParam, data.OutHumidity);
+        AddIfHasValue(queryBuilder, PressureQueryParam, data.RelativePressure);
+        AddIfHasValue(queryBuilder, UvIndexQueryParam, data.Uvi);
+        AddIfHasValue(queryBuilder, SolarRadiationQueryParam, data.LightIntensity);
+        AddIfHasValue(queryBuilder, HourlyRainfallQueryParam, data.HourlyRainfall);
+        AddIfHasValue(queryBuilder, TemperatureQueryParam, data.OutTemperature);
 
         return queryBuilder.ToString();
+    }
+
+    private static void AddIfHasValue(QueryBuilder queryBuilder, string name, double? value)
+    {
+        if (value.HasValue)
+            queryBuilder.Add(name, value.Value.ToString("F1", CultureInfo.InvariantCulture));
+    }
+
+    private static void AddIfHasValue(QueryBuilder queryBuilder, string name, int? value)
+    {
+        if (value.HasValue)
+            queryBuilder.Add(name, value.Value.ToString(CultureInfo.InvariantCulture));
     }
 }
