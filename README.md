@@ -103,7 +103,7 @@ Weather data can be sent to openHAB items via the REST API (`PUT /rest/items/{it
   use a plain `Number` item or `Number:Dimensionless` with `unit="%"` metadata. `OutSensorConnected` is sent as `ON`/`OFF` (Switch item).
 - Missing values (e.g. disconnected outdoor sensor) are sent as `UNDEF`.
 - `BaseUrl` can contain a sub-path (openHAB behind a reverse proxy). An invalid `BaseUrl` or no valid item mapping
-  disables the adapter and logs an error at startup.
+  disables the adapter and logs an error on the first station upload.
 - `ApiToken` is optional when the openHAB REST API allows anonymous access.
 - Items are updated with at most 4 parallel requests, the whole update is limited to 10 s.
   Failures are logged as a single warning per update (with the first error), details are logged on Debug level.
