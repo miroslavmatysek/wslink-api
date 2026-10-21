@@ -163,7 +163,8 @@ Logging uses NLog (`src/WsLink.Api/nlog.config`), from Debug level up. Logs are 
 
 - `Wslink.Api-*.log` and the console: application logs, without `Microsoft.*` logs and without Debug/Info
   `HttpClient` request logs.
-- `Wslink.Api-all-*.log`: everything, including framework logs.
+- `Wslink.Api-all-*.log`: everything, including framework logs. The station sends its password in the query string,
+  so it is masked in the request logs (`wspw=***`).
 
 Unreachable targets are logged as warnings without stack traces, so an outage of one target does not flood the log.
 

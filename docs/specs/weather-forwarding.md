@@ -35,7 +35,9 @@ a change of behavior must update this spec, the tests and `README.md` together.
    | Unexpected exception                           | Error       | yes              |
 
    A down target produces at most one Warning per upload.
-6. Numbers sent as text use `CultureInfo.InvariantCulture`.
+6. Secrets are not logged: the station password in request logs is masked by `nlog.config` (`wspw=***`,
+   `${regex-replace}` from `NLog.RegEx`), Windy station id is masked, tokens are only in headers.
+7. Numbers sent as text use `CultureInfo.InvariantCulture`.
 
 ## 3. Home Assistant
 
