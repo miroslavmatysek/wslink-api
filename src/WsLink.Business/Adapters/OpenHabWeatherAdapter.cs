@@ -174,9 +174,11 @@ public class OpenHabWeatherAdapter : IWeatherAdapter
                 DefaultItemPrefix);
         }
 
-        foreach (var (propertyName, itemName) in mapping)
+        foreach (var (propertyName, configuredItemName) in mapping)
         {
-            if (string.IsNullOrWhiteSpace(itemName))
+            // openHAB item names cannot contain whitespace, a stray space from env variables would only cause 404.
+            var itemName = configuredItemName?.Trim();
+            if (string.IsNullOrEmpty(itemName))
                 continue;
 
             if (StateSelectors.TryGetValue(propertyName, out var stateSelector))

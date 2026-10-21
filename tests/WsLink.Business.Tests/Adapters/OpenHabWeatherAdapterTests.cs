@@ -158,6 +158,20 @@ public class OpenHabWeatherAdapterTests
     }
 
     [Fact]
+    public async Task ProcessWeatherDataAsync_ItemNameWithSurroundingWhitespace_IsTrimmed()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(CreateConfig(("YearlyRainfall", " WsLink_YearlyRainfall\n")), handler);
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(CreateFullData());
+
+        // Assert
+        Assert.Equal(new Uri($"{BaseUrl}/rest/items/WsLink_YearlyRainfall/state"), Assert.Single(handler.Requests).Uri);
+    }
+
+    [Fact]
     public async Task ProcessWeatherDataAsync_PropertyNameIsCaseInsensitive()
     {
         // Arrange

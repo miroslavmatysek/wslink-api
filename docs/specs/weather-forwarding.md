@@ -60,7 +60,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
   Invalid `BaseUrl` or no valid mapping → disabled and an Error logged when the adapter is created
   (adapters are singletons created with `WeatherService`, i.e. on the first station upload, not at startup).
 - `Items` maps a `WeatherStationData` property name (case-insensitive) to an item name. Unknown property
-  → Warning, ignored. Blank item name → ignored. Empty `Items` → default mapping of every property to
+  → Warning, ignored. Item names are trimmed (a stray space from env variables would cause 404). Blank item name → ignored. Empty `Items` → default mapping of every property to
   `WsLink_{Property}` (Information logged). A non-empty `Items` replaces the default, it is not merged with it;
   the default is built in the adapter, not in `appsettings.json`, because configuration merges dictionaries per key.
 - `PUT {BaseUrl}/rest/items/{item}/state`, body `text/plain`, optional `Authorization: Bearer {ApiToken}`
