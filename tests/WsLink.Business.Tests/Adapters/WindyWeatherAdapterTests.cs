@@ -31,6 +31,7 @@ public class WindyWeatherAdapterTests
         OutSensorConnected = true,
         OutTemperature = -3.5,
         OutHumidity = 45,
+        DewPoint = -8.2,
         RelativePressure = 1013.2,
         WindDirection = 270,
         WindSpeed = 3.1,
@@ -107,6 +108,7 @@ public class WindyWeatherAdapterTests
             ["solarradiation"] = "512.3",
             ["precip"] = "0.4",
             ["temp"] = "-3.5",
+            ["dewpoint"] = "-8.2",
         }, query.AllKeys.ToDictionary(k => k!, k => query[k]));
     }
 

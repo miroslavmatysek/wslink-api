@@ -96,6 +96,36 @@ public class HomeAssistantWeatherAdapterTests
         Assert.Equal(270, json.GetProperty("wind_direction").GetInt32());
     }
 
+    // The property names are the contract with Home Assistant templates, a rename would silently break them.
+    [Fact]
+    public async Task ProcessWeatherDataAsync_AllValues_UsesContractPropertyNames()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(handler);
+        var data = new WeatherStationData
+        {
+            OutSensorConnected = true, OutTemperature = 1, OutHumidity = 1, DewPoint = 1, InTemperature = 1,
+            InHumidity = 1, AbsolutePressure = 1, RelativePressure = 1, WindDirection = 1, WindSpeed = 1,
+            WindSpeed10MinutesAvg = 1, WindGust = 1, RainRate = 1, HourlyRainfall = 1, DailyRainfall = 1,
+            WeeklyRainfall = 1, MonthlyRainfall = 1, YearlyRainfall = 1, Uvi = 1, LightIntensity = 1
+        };
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(data);
+
+        // Assert
+        var json = JsonDocument.Parse(Assert.Single(handler.Requests).Content!).RootElement;
+        Assert.Equal(
+            [
+                "a_pressure", "dew_point", "in_hum", "in_temp", "light_intensity", "out_hum", "out_sensor_connected",
+                "out_temp", "r_pressure", "rain_rate", "rainfall_daily", "rainfall_hourly", "rainfall_monthly",
+                "rainfall_weekly", "rainfall_yearly", "uvi", "wind_direction", "wind_gust", "wind_speed",
+                "wind_speed_10min"
+            ],
+            json.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal));
+    }
+
     [Fact]
     public async Task ProcessWeatherDataAsync_NoBaseUrl_UsesDefaultHomeAssistantUrl()
     {

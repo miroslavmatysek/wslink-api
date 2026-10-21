@@ -9,7 +9,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
 2. Non-finite input values (`NaN`, `±Infinity`) become `null` (missing).
 3. A value rounded to zero from below is `0`, never `-0`.
 4. `OutSensorConnected = t1cn != 0`. A missing `t1cn` means connected.
-5. When the outdoor sensor is disconnected, all outdoor values are `null`: temperature, humidity,
+5. When the outdoor sensor is disconnected, all outdoor values are `null`: temperature, humidity, dew point (`t1dew`),
    wind (direction, speed, 10 min average, gust), rain (rate, hourly, daily, weekly, monthly, yearly),
    UV index and light intensity.
    Indoor temperature, indoor humidity and both pressures are kept.
@@ -50,7 +50,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
 
 - Enabled when `Enabled` and `ApiHost`, `StationId`, `StationPassword` are not blank.
 - `GET {ApiHost}/api/v2/observation/update?id={StationId}&...` with `Authorization: Bearer {StationPassword}`.
-- Query parameters: `temp` (out temperature), `humidity` (out humidity), `mbar` (relative pressure),
+- Query parameters: `temp` (out temperature), `humidity` (out humidity), `dewpoint`, `mbar` (relative pressure),
   `wind`, `gust`, `winddir`, `uv`, `solarradiation` (light intensity), `precip` (hourly rainfall).
   Doubles are formatted `F1`, integers as is. Missing values are not sent.
 - At most one request per `UpdateInterval` (default 5 min, Windy accepts at most one update per 5 min).
@@ -74,7 +74,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
   | Property                                               | State           |
   |--------------------------------------------------------|-----------------|
   | `OutSensorConnected`                                   | `ON` / `OFF`    |
-  | `OutTemperature`, `InTemperature`                      | `<v> °C`        |
+  | `OutTemperature`, `InTemperature`, `DewPoint`          | `<v> °C`        |
   | `OutHumidity`, `InHumidity`, `Uvi`                     | `<v>` (no unit) |
   | `AbsolutePressure`, `RelativePressure`                 | `<v> hPa`       |
   | `WindDirection`                                        | `<v> °`         |

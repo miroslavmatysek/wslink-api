@@ -41,6 +41,12 @@ public class WsLinkRequestParam
     public float? OutHumidity1 { get; set; }
 
     /// <summary>
+    /// Outdoor dew point temperature in celsius degree.
+    /// </summary>
+    [FromQuery(Name = "t1dew")]
+    public float? DewPoint1 { get; set; }
+
+    /// <summary>
     /// Direction of the wind in degrees.
     /// </summary>
     [FromQuery(Name = "t1wdir")]

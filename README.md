@@ -51,7 +51,7 @@ Weather data is sent as JSON to a Home Assistant [webhook](https://www.home-assi
 - `BaseUrl` defaults to `http://homeassistant.local:8123`. It can contain a sub-path (Home Assistant behind
   a reverse proxy), e.g. `http://proxy.local/ha` sends to `http://proxy.local/ha/api/webhook/{WebhookId}`.
 - Missing values are not included in the payload at all. Payload properties:
-  `out_sensor_connected`, `out_temp`, `out_hum`, `in_temp`, `in_hum`, `a_pressure`, `r_pressure`, `wind_direction`,
+  `out_sensor_connected`, `out_temp`, `out_hum`, `dew_point`, `in_temp`, `in_hum`, `a_pressure`, `r_pressure`, `wind_direction`,
   `wind_speed`, `wind_speed_10min`, `wind_gust`, `rain_rate`, `rainfall_hourly`, `rainfall_daily`, `rainfall_weekly`,
   `rainfall_monthly`, `rainfall_yearly`, `uvi`, `light_intensity`.
 - Units are the station units: °C, %, hPa, °, m/s, mm/h, mm, W/m².
@@ -75,8 +75,8 @@ Observations are sent to the [Windy stations API](https://stations.windy.com)
 - `ApiHost` defaults to `https://stations.windy.com`, `UpdateInterval` defaults to 5 minutes.
 - At most one update is sent per `UpdateInterval`, station posts in between are skipped. A failed update
   (Windy unreachable, error response like `429`) is not retried before the interval elapses.
-- Sent values: temperature, humidity, relative pressure, wind speed, gust and direction, UV index, solar radiation
-  and hourly rainfall. Missing values are not sent.
+- Sent values: temperature, humidity, dew point, relative pressure, wind speed, gust and direction, UV index,
+  solar radiation and hourly rainfall. Missing values are not sent.
 - The station id is not logged, the logged query contains `id=masked`.
 
 ### openHAB
@@ -98,8 +98,9 @@ Weather data can be sent to openHAB items via the REST API (`PUT /rest/items/{it
 - `Items` maps a `WeatherStationData` property name to an openHAB item name. Only mapped values are sent.
   Without `Items`, every property is sent to an item named `WsLink_<Property>` (e.g. `WsLink_OutTemperature`),
   so with these item names only `Enabled`, `BaseUrl` and `ApiToken` need to be set. A configured `Items` replaces
-  the default mapping as a whole.
-  Available properties: `OutSensorConnected`, `OutTemperature`, `OutHumidity`, `InTemperature`, `InHumidity`,
+  the default mapping as a whole. A new version can add a property to the default mapping (e.g. `DewPoint`);
+  create its item, otherwise every update logs a warning with `404 NotFound` for it.
+  Available properties: `OutSensorConnected`, `OutTemperature`, `OutHumidity`, `DewPoint`, `InTemperature`, `InHumidity`,
   `AbsolutePressure`, `RelativePressure`, `WindDirection`, `WindSpeed`, `WindSpeed10MinutesAvg`, `WindGust`,
   `RainRate`, `HourlyRainfall`, `DailyRainfall`, `WeeklyRainfall`, `MonthlyRainfall`, `YearlyRainfall`, `Uvi`, `LightIntensity`.
 - Values are sent with units (°C, hPa, °, m/s, mm/h, mm, W/m²), so dimensioned items (e.g. `Number:Speed`) convert them

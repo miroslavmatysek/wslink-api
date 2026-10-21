@@ -25,6 +25,7 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
             OutSensorConnected = outSensorConnected,
             OutTemperature = Outdoor(requestParam.OutTemperature1),
             OutHumidity = Outdoor(requestParam.OutHumidity1),
+            DewPoint = Outdoor(requestParam.DewPoint1),
             InTemperature = Round(requestParam.InTemperature),
             InHumidity = Round(requestParam.InHumidity),
             AbsolutePressure = Round(requestParam.AbsoluteAirPressure),

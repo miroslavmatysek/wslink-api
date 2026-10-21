@@ -27,6 +27,7 @@ public class WindyWeatherAdapter(
     private const string SolarRadiationQueryParam = "solarradiation";
     private const string HourlyRainfallQueryParam = "precip";
     private const string TemperatureQueryParam = "temp";
+    private const string DewPointQueryParam = "dewpoint";
 
     // Station id is a secret (anyone with it and the password could upload data), so it is not logged.
     private const string MaskedStationId = "masked";
@@ -112,6 +113,7 @@ public class WindyWeatherAdapter(
         AddIfHasValue(observation, SolarRadiationQueryParam, data.LightIntensity);
         AddIfHasValue(observation, HourlyRainfallQueryParam, data.HourlyRainfall);
         AddIfHasValue(observation, TemperatureQueryParam, data.OutTemperature);
+        AddIfHasValue(observation, DewPointQueryParam, data.DewPoint);
         return observation;
     }
 

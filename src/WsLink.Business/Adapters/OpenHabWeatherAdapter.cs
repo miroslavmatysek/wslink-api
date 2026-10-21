@@ -35,6 +35,7 @@ public class OpenHabWeatherAdapter : IWeatherAdapter
             [nameof(WeatherStationData.OutSensorConnected)] = d => d.OutSensorConnected ? "ON" : "OFF",
             [nameof(WeatherStationData.OutTemperature)] = d => FormatState(d.OutTemperature, "°C"),
             [nameof(WeatherStationData.OutHumidity)] = d => FormatState(d.OutHumidity),
+            [nameof(WeatherStationData.DewPoint)] = d => FormatState(d.DewPoint, "°C"),
             [nameof(WeatherStationData.InTemperature)] = d => FormatState(d.InTemperature, "°C"),
             [nameof(WeatherStationData.InHumidity)] = d => FormatState(d.InHumidity),
             [nameof(WeatherStationData.AbsolutePressure)] = d => FormatState(d.AbsolutePressure, "hPa"),

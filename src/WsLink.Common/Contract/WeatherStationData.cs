@@ -15,6 +15,12 @@ public class WeatherStationData
     
     [JsonPropertyName("out_hum")]
     public double? OutHumidity { get; set; }
+
+    /// <summary>
+    /// Outdoor dew point in celsius degree.
+    /// </summary>
+    [JsonPropertyName("dew_point")]
+    public double? DewPoint { get; set; }
     
     [JsonPropertyName("in_temp")]
     public double? InTemperature { get; set; }

@@ -13,6 +13,7 @@ public class WeatherServiceTests
         OutSensorConnection = outSensorConnection,
         OutTemperature1 = 21.37f,
         OutHumidity1 = 55f,
+        DewPoint1 = -3.62f,
         InTemperature = 23.04f,
         InHumidity = 41.5f,
         AbsoluteAirPressure = 978.26f,
@@ -49,6 +50,7 @@ public class WeatherServiceTests
         Assert.True(payload.OutSensorConnected);
         Assert.Equal(21.4, payload.OutTemperature);
         Assert.Equal(55, payload.OutHumidity);
+        Assert.Equal(-3.6, payload.DewPoint);
         Assert.Equal(23, payload.InTemperature);
         Assert.Equal(41.5, payload.InHumidity);
         Assert.Equal(978.3, payload.AbsolutePressure);
@@ -82,6 +84,7 @@ public class WeatherServiceTests
         Assert.False(payload.OutSensorConnected);
         Assert.Null(payload.OutTemperature);
         Assert.Null(payload.OutHumidity);
+        Assert.Null(payload.DewPoint);
         Assert.Null(payload.WindDirection);
         Assert.Null(payload.WindSpeed);
         Assert.Null(payload.WindSpeed10MinutesAvg);

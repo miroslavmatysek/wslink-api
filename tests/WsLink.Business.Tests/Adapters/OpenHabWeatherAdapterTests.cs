@@ -31,6 +31,7 @@ public class OpenHabWeatherAdapterTests
         OutSensorConnected = true,
         OutTemperature = -3.5,
         OutHumidity = 45,
+        DewPoint = -8.2,
         InTemperature = 22.1,
         InHumidity = 40.5,
         AbsolutePressure = 978.3,
@@ -132,7 +133,8 @@ public class OpenHabWeatherAdapterTests
         // Assert
         Assert.Equal(
             [
-                "WsLink_AbsolutePressure", "WsLink_DailyRainfall", "WsLink_HourlyRainfall", "WsLink_InHumidity",
+                "WsLink_AbsolutePressure", "WsLink_DailyRainfall", "WsLink_DewPoint", "WsLink_HourlyRainfall",
+                "WsLink_InHumidity",
                 "WsLink_InTemperature", "WsLink_LightIntensity", "WsLink_MonthlyRainfall", "WsLink_OutHumidity",
                 "WsLink_OutSensorConnected", "WsLink_OutTemperature", "WsLink_RainRate", "WsLink_RelativePressure",
                 "WsLink_Uvi", "WsLink_WeeklyRainfall", "WsLink_WindDirection", "WsLink_WindGust", "WsLink_WindSpeed",
@@ -244,7 +246,7 @@ public class OpenHabWeatherAdapterTests
         // Arrange
         var properties = new[]
         {
-            "OutSensorConnected", "OutTemperature", "OutHumidity", "InTemperature", "InHumidity",
+            "OutSensorConnected", "OutTemperature", "OutHumidity", "DewPoint", "InTemperature", "InHumidity",
             "AbsolutePressure", "RelativePressure", "WindDirection", "WindSpeed", "WindSpeed10MinutesAvg",
             "WindGust", "RainRate", "HourlyRainfall", "DailyRainfall", "WeeklyRainfall", "MonthlyRainfall",
             "YearlyRainfall", "Uvi", "LightIntensity"
@@ -262,6 +264,7 @@ public class OpenHabWeatherAdapterTests
             ["Item_OutSensorConnected"] = "ON",
             ["Item_OutTemperature"] = "-3.5 °C",
             ["Item_OutHumidity"] = "45",
+            ["Item_DewPoint"] = "-8.2 °C",
             ["Item_InTemperature"] = "22.1 °C",
             ["Item_InHumidity"] = "40.5",
             ["Item_AbsolutePressure"] = "978.3 hPa",
