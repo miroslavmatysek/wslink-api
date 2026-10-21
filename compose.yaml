@@ -9,6 +9,11 @@
       - "8080"
     ports:
       - "8080:8080"
+    environment:
+      # Secrets and host-specific values come from the shell or a .env file next to this file.
+      OpenHab__Enabled: "true"
+      OpenHab__BaseUrl: ${OPENHAB_BASE_URL:?OPENHAB_BASE_URL is not set}
+      OpenHab__ApiToken: ${OPENHAB_API_TOKEN:-}
 
   caddy:
     image: caddy:2

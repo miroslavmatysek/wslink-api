@@ -133,6 +133,14 @@ docker compose up -d --build
 `compose.yaml` runs the API on port `8080` and a [Caddy](https://caddyserver.com) reverse proxy with an internal
 TLS certificate on port `4443`. Adjust the image registry and the Caddy host address to your environment.
 
+`compose.yaml` enables openHAB with the default item mapping. It requires `OPENHAB_BASE_URL` (every `docker compose`
+command fails without it) and optionally `OPENHAB_API_TOKEN`, e.g. in a `.env` file next to it (ignored by git):
+
+```env
+OPENHAB_BASE_URL=http://openhab.local:8080
+OPENHAB_API_TOKEN=<openHAB API token>
+```
+
 Pass the configuration (including secrets) as environment variables of the `wslink.api` service,
 e.g. in `compose.yaml` or in a `.env` file next to it (keep it out of git):
 
