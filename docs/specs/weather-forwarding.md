@@ -91,8 +91,10 @@ a change of behavior must update this spec, the tests and `README.md` together.
 
 ## 6. Gladys Assistant (MQTT)
 
-- Enabled when `Enabled`, `Host` is not blank, `Port` is 1–65535, `DeviceExternalId` is valid and at least one valid
-  feature mapping exists. Otherwise disabled and an Error logged when the adapter is created.
+- Enabled when `Enabled`, `Host` is a host name or IP address (`Uri.CheckHostName`, so no URL or port), `Port`
+  is 1–65535, `DeviceExternalId` is valid and at least one valid feature mapping exists. Otherwise disabled and
+  an Error logged when the adapter is created (i.e. on the first station upload, like openHAB).
+  A `Password` without `Username` is not used and a Warning is logged.
 - A valid external id starts with `mqtt:`, has at least one character after it and contains no whitespace,
   `/`, `+`, `#` (it is a single MQTT topic level). Ids are trimmed.
 - `Features` maps a `WeatherStationData` property name (case-insensitive) to a feature external id. Unknown property
@@ -101,7 +103,9 @@ a change of behavior must update this spec, the tests and `README.md` together.
 - Each value is published to `gladys/master/device/{DeviceExternalId}/feature/{FeatureExternalId}/state`,
   QoS 0, not retained. Payload: number formatted with `CultureInfo.InvariantCulture`, `OutSensorConnected` as `1`/`0`.
   Missing values are not published; when no mapped value is present, nothing is published.
-- One connection per upload (connect, publish all, disconnect), clean session, client id `ClientId`
-  (default `wslink-api`), optional username/password (password trimmed). Overall timeout 10 s.
-- MQTT communication errors (refused, bad credentials, timeout), socket errors and the timeout → one Warning
+- One connection per upload (connect, publish all, disconnect), clean session, client id `{ClientId}-{8 hex}`
+  (default `ClientId` is `wslink-api`; the random suffix prevents session takeover between overlapping connections),
+  optional username/password (password trimmed). Overall timeout 10 s.
+- A failed disconnect after all messages were published is ignored, the update counts as successful.
+- MQTT communication errors (refused, bad credentials, timeout), socket and I/O errors and the timeout → one Warning
   with the message; other exceptions → Error with the exception.

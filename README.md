@@ -137,7 +137,7 @@ Gladys has no HTTP endpoint for sensor values, so the data is published to the M
 
 - In Gladys, create a device in the MQTT integration with the external id `DeviceExternalId` (default `mqtt:wslink`)
   and a feature for every value you want, e.g. external id `mqtt:wslink:out_temp`, category temperature sensor.
-- The adapter is enabled when `Enabled` is `true`, `Host` is set, `Port` is valid and `DeviceExternalId` and at least
+- The adapter is enabled when `Enabled` is `true`, `Host` is a host name or IP address (no `mqtt://`, no port), `Port` is valid and `DeviceExternalId` and at least
   one feature id are valid. External ids must start with `mqtt:` (Gladys requirement) and must not contain whitespace,
   `/`, `+` or `#`. An invalid configuration disables the adapter and logs an error on the first station upload.
 - `Features` maps a `WeatherStationData` property name (same names as for [openHAB](#openhab)) to a Gladys feature
@@ -147,7 +147,10 @@ Gladys has no HTTP endpoint for sensor values, so the data is published to the M
   are ignored by Gladys.
 - Values are plain numbers in the station units (°C, %, hPa, °, m/s, mm/h, mm, W/m²); `OutSensorConnected` is `1`/`0`.
   Missing values (e.g. disconnected outdoor sensor) are not sent, Gladys keeps the last state.
-- `Username` and `Password` are optional (anonymous broker). `ClientId` defaults to `wslink-api`.
+- `Username` and `Password` are optional (anonymous broker). A `Password` without `Username` is not used (warning logged).
+- `ClientId` defaults to `wslink-api`. A random suffix is added to every connection (e.g. `wslink-api-1a2b3c4d`),
+  so overlapping uploads or several service instances on one broker do not disconnect each other.
+  Keep a custom `ClientId` at most 14 characters, some brokers reject client ids longer than 23 characters.
 - Every upload opens a new connection, publishes all values (QoS 0, not retained) and disconnects.
   The whole update is limited to 10 s, a failure is logged as a single warning.
 - Configuration can be set via environment variables, e.g. `Gladys__Host=mqtt.local`, `Gladys__Password=...`.

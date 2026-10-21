@@ -13,7 +13,7 @@ public sealed class MqttNetPublisher : IMqttPublisher
     {
         var builder = new MqttClientOptionsBuilder()
             .WithTcpServer(broker.Host, broker.Port)
-            .WithClientId(broker.ClientId)
+            .WithClientId(CreateClientId(broker.ClientId))
             .WithCleanSession();
         if (!string.IsNullOrEmpty(broker.Username))
             builder.WithCredentials(broker.Username, broker.Password);
@@ -32,6 +32,19 @@ public sealed class MqttNetPublisher : IMqttPublisher
             await client.PublishAsync(applicationMessage, cancellationToken).ConfigureAwait(false);
         }
 
-        await client.DisconnectAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await client.DisconnectAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // The messages are already sent, a failed disconnect (broker closed the socket first, timeout)
+            // must not report the update as failed. Dispose closes the connection anyway.
+        }
     }
+
+    // The broker drops an existing session when another one connects with the same client id, so overlapping
+    // uploads or two service instances on one broker would disconnect each other. The suffix keeps the id
+    // within 23 characters for the default client id, the limit MQTT 3.1.1 brokers are required to accept.
+    internal static string CreateClientId(string clientId) => $"{clientId}-{Guid.NewGuid().ToString("N")[..8]}";
 }

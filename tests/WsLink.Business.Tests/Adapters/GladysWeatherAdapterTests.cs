@@ -89,6 +89,8 @@ public class GladysWeatherAdapterTests
     [Theory]
     [InlineData(null, 1883)]
     [InlineData(" ", 1883)]
+    [InlineData("mqtt://mqtt.local", 1883)]
+    [InlineData("mqtt.local:1883", 1883)]
     [InlineData(Host, 0)]
     [InlineData(Host, 65536)]
     public void IsEnabled_InvalidBroker_IsFalseAndLogsError(string? host, int port)
@@ -145,6 +147,40 @@ public class GladysWeatherAdapterTests
         Assert.False(isEnabled);
         Assert.Contains(logger.AtLevel(LogLevel.Error), e => e.Message.Contains("No valid Gladys feature mapping"));
         Assert.Equal(2, logger.AtLevel(LogLevel.Warning).Count);
+    }
+
+    [Theory]
+    [InlineData("192.168.1.10")]
+    [InlineData("::1")]
+    public void IsEnabled_IpAddressHost_IsTrue(string host)
+    {
+        // Arrange
+        var config = CreateConfig();
+        config.Host = host;
+        var adapter = CreateAdapter(config);
+
+        // Act
+        var isEnabled = adapter.IsEnabled;
+
+        // Assert
+        Assert.True(isEnabled);
+    }
+
+    [Fact]
+    public void Constructor_PasswordWithoutUsername_LogsWarning()
+    {
+        // Arrange
+        var config = CreateConfig();
+        config.Password = "secret";
+
+        // Act
+        var adapter = CreateAdapter(config);
+
+        // Assert
+        Assert.True(adapter.IsEnabled);
+        var warning = Assert.Single(logger.AtLevel(LogLevel.Warning));
+        Assert.Contains("without a username", warning.Message);
+        Assert.DoesNotContain("secret", warning.Message);
     }
 
     [Fact]
@@ -291,6 +327,7 @@ public class GladysWeatherAdapterTests
         new MqttCommunicationException("Connection refused"),
         new MqttCommunicationTimedOutException(),
         new SocketException((int)SocketError.HostNotFound),
+        new IOException("Connection reset by peer"),
         new OperationCanceledException(),
     ];
 

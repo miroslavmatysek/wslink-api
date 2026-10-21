@@ -87,7 +87,8 @@ public class GladysWeatherAdapter : IWeatherAdapter
             logger.LogInformation("Gladys feature states published [Count: {Count}, Skipped: {SkippedCount}]",
                 messages.Count, features.Count - messages.Count);
         }
-        catch (Exception e) when (e is MqttCommunicationException or SocketException or OperationCanceledException)
+        catch (Exception e) when (e is MqttCommunicationException or SocketException or IOException
+                                       or OperationCanceledException)
         {
             // Expected when the broker is not reachable or rejects the connection (e.g. bad credentials),
             // the stack trace would only flood the log.
@@ -105,13 +106,19 @@ public class GladysWeatherAdapter : IWeatherAdapter
         if (!config.Enabled)
             return null;
 
+        // Only a host name or IP address, a URL (mqtt://host) or host:port would fail on every upload.
         var host = config.Host?.Trim();
-        if (string.IsNullOrEmpty(host) || config.Port is < 1 or > 65535)
+        if (string.IsNullOrEmpty(host) || Uri.CheckHostName(host) == UriHostNameType.Unknown ||
+            config.Port is < 1 or > 65535)
         {
             logger.LogError("Invalid Gladys MQTT broker, Gladys adapter is disabled [Host: {Host}, Port: {Port}]",
                 config.Host, config.Port);
             return null;
         }
+
+        // Credentials are sent only with a username, a password alone would be refused by the broker on every upload.
+        if (string.IsNullOrWhiteSpace(config.Username) && !string.IsNullOrWhiteSpace(config.Password))
+            logger.LogWarning("Gladys MQTT password is set without a username, the password is not used");
 
         var clientId = string.IsNullOrWhiteSpace(config.ClientId) ? "wslink-api" : config.ClientId.Trim();
         // Password from env variable or docker secret can contain a trailing new line.

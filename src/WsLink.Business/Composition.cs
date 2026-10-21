@@ -23,7 +23,6 @@ public static class Composition
         // openHAB adapter limits the whole update by its own timeout.
         services.AddHttpClient(OpenHabWeatherAdapter.OpenHabClientName,
             client => client.Timeout = Timeout.InfiniteTimeSpan);
-        // Gladys adapter limits the whole MQTT update by its own timeout.
         services.AddSingleton<IMqttPublisher, MqttNetPublisher>();
         services.AddSingleton<IWeatherService, WeatherService>();
         services.AddSingleton<IAdapterFactory, AdapterFactory>();

@@ -7,6 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="WsLink.Business.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\WsLink.Common\WsLink.Common.csproj" />
     </ItemGroup>
 
