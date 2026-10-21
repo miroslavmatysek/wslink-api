@@ -88,13 +88,16 @@ Weather data can be sent to openHAB items via the REST API (`PUT /rest/items/{it
   "BaseUrl": "http://openhab.local:8080",
   "ApiToken": "<openHAB API token>",
   "Items": {
-    "OutTemperature": "WsLink_OutTemperature",
-    "OutSensorConnected": "WsLink_OutSensorConnected"
+    "OutTemperature": "Garden_Temperature",
+    "OutSensorConnected": "Garden_WeatherSensor"
   }
 }
 ```
 
-- `Items` maps a `WeatherStationData` property name to an openHAB item name. Only mapped values are sent, there is no default mapping.
+- `Items` maps a `WeatherStationData` property name to an openHAB item name. Only mapped values are sent.
+  Without `Items`, every property is sent to an item named `WsLink_<Property>` (e.g. `WsLink_OutTemperature`),
+  so with these item names only `Enabled`, `BaseUrl` and `ApiToken` need to be set. A configured `Items` replaces
+  the default mapping as a whole.
   Available properties: `OutSensorConnected`, `OutTemperature`, `OutHumidity`, `InTemperature`, `InHumidity`,
   `AbsolutePressure`, `RelativePressure`, `WindDirection`, `WindSpeed`, `WindSpeed10MinutesAvg`, `WindGust`,
   `RainRate`, `HourlyRainfall`, `DailyRainfall`, `WeeklyRainfall`, `MonthlyRainfall`, `YearlyRainfall`, `Uvi`, `LightIntensity`.
@@ -107,7 +110,7 @@ Weather data can be sent to openHAB items via the REST API (`PUT /rest/items/{it
 - `ApiToken` is optional when the openHAB REST API allows anonymous access.
 - Items are updated with at most 4 parallel requests, the whole update is limited to 10 s.
   Failures are logged as a single warning per update (with the first error), details are logged on Debug level.
-- Configuration can be set via environment variables, e.g. `OpenHab__Items__OutTemperature=WsLink_OutTemperature`.
+- Configuration can be set via environment variables, e.g. `OpenHab__Items__OutTemperature=Garden_Temperature`.
 
 ## Running
 

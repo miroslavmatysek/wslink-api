@@ -15,7 +15,7 @@ public class OpenHabConfig
 
     /// <summary>
     /// Mapping of <see cref="Contract.WeatherStationData"/> property name to openHAB item name.
-    /// Only mapped values are sent.
+    /// Only mapped values are sent. When empty, every property is mapped to an item named WsLink_{Property}.
     /// </summary>
     public Dictionary<string, string> Items { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }

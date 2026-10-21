@@ -69,10 +69,10 @@ public class OpenHabWeatherAdapterTests
     }
 
     [Fact]
-    public void IsEnabled_NoItemMapping_IsFalseAndLogsError()
+    public void IsEnabled_NoValidItemMapping_IsFalseAndLogsError()
     {
         // Arrange
-        var config = CreateConfig();
+        var config = CreateConfig(("OutTemperature", " "));
 
         // Act
         var adapter = CreateAdapter(config);
@@ -117,6 +117,44 @@ public class OpenHabWeatherAdapterTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(new Uri($"{BaseUrl}/rest/items/Temp/state"), request.Uri);
         Assert.Contains(logger.AtLevel(LogLevel.Warning), e => e.Message.Contains("NoSuchProperty"));
+    }
+
+    [Fact]
+    public async Task ProcessWeatherDataAsync_NoItemMapping_UsesDefaultItemForEveryProperty()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(CreateConfig(), handler);
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(CreateFullData());
+
+        // Assert
+        Assert.Equal(
+            [
+                "WsLink_AbsolutePressure", "WsLink_DailyRainfall", "WsLink_HourlyRainfall", "WsLink_InHumidity",
+                "WsLink_InTemperature", "WsLink_LightIntensity", "WsLink_MonthlyRainfall", "WsLink_OutHumidity",
+                "WsLink_OutSensorConnected", "WsLink_OutTemperature", "WsLink_RainRate", "WsLink_RelativePressure",
+                "WsLink_Uvi", "WsLink_WeeklyRainfall", "WsLink_WindDirection", "WsLink_WindGust", "WsLink_WindSpeed",
+                "WsLink_WindSpeed10MinutesAvg", "WsLink_YearlyRainfall"
+            ],
+            StatesByItem(handler).Keys.Order(StringComparer.Ordinal));
+        Assert.Equal("-3.5 °C", StatesByItem(handler)["WsLink_OutTemperature"]);
+        Assert.Contains(logger.AtLevel(LogLevel.Information), e => e.Message.Contains("default mapping"));
+    }
+
+    [Fact]
+    public async Task ProcessWeatherDataAsync_ItemMapping_ReplacesDefaultMapping()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(CreateConfig(("OutTemperature", "Garden_Temperature")), handler);
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(CreateFullData());
+
+        // Assert
+        Assert.Equal("Garden_Temperature", Assert.Single(StatesByItem(handler)).Key);
     }
 
     [Fact]

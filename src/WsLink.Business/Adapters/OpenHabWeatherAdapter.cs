@@ -23,6 +23,9 @@ public class OpenHabWeatherAdapter : IWeatherAdapter
     // openHAB state for an unknown value, used when the station did not send the value.
     private const string UndefinedState = "UNDEF";
 
+    // Item name prefix of the default mapping, used when no item is configured.
+    private const string DefaultItemPrefix = "WsLink_";
+
     // Values are sent with the station units, so openHAB converts them for dimensioned items (e.g. Number:Speed
     // defaults to km/h). Plain Number items ignore the unit. Humidity is sent without "%", because the default unit
     // of Number:Dimensionless is "one" and 45 % would be stored as 0.45.
@@ -160,7 +163,18 @@ public class OpenHabWeatherAdapter : IWeatherAdapter
             return result;
         }
 
-        foreach (var (propertyName, itemName) in config.Items)
+        // The default is applied here and not in appsettings.json, because configuration merges dictionaries
+        // per key, so a configured mapping could never replace the default one, only extend it.
+        var mapping = config.Items;
+        if (mapping.Count == 0)
+        {
+            mapping = StateSelectors.Keys.ToDictionary(propertyName => propertyName,
+                propertyName => DefaultItemPrefix + propertyName);
+            logger.LogInformation("No openHAB item mapping configured, default mapping is used [Prefix: {Prefix}]",
+                DefaultItemPrefix);
+        }
+
+        foreach (var (propertyName, itemName) in mapping)
         {
             if (string.IsNullOrWhiteSpace(itemName))
                 continue;
