@@ -13,7 +13,7 @@ public class WindyWeatherAdapter(
     IOptions<WindyConfig> windyConfig,
     ILogger<WindyWeatherAdapter> logger) : IWeatherAdapter
 {
-    private const string HttpClientName = "Windy";
+    internal const string HttpClientName = "Windy";
     private const string DataPath = "/api/v2/observation/update";
 
     private const string StationIdQueryParam = "id";
@@ -40,6 +40,9 @@ public class WindyWeatherAdapter(
 
         if (DateTime.Now.Subtract(lastUpdate) > windyConfig.Value.UpdateInterval)
         {
+            // Set before sending, so a failed attempt (unreachable Windy, error response like 429) is not retried
+            // on every station post and an overlapping station post does not send a second update.
+            lastUpdate = DateTime.Now;
             try
             {
                 var urlBuilder =
@@ -56,9 +59,17 @@ public class WindyWeatherAdapter(
                 request.Headers.Add("Accept", "application/json");
                 using var response = await client.SendAsync(request).ConfigureAwait(false);
 
-                lastUpdate = DateTime.Now;
-                logger.LogInformation("Processing Windy weather data [Data: {@Data}, Status: {StatusCode}]", data,
-                    response.StatusCode);
+                if (response.IsSuccessStatusCode)
+                    logger.LogInformation("Processing Windy weather data [Data: {@Data}, Status: {StatusCode}]", data,
+                        response.StatusCode);
+                else
+                    logger.LogWarning("Windy weather data rejected [Data: {@Data}, Status: {StatusCode}]", data,
+                        response.StatusCode);
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+            {
+                // Expected when Windy is not reachable, the stack trace would only flood the log.
+                logger.LogWarning("Error processing Windy weather data [Error: {Error}]", e.Message);
             }
             catch (Exception e)
             {

@@ -20,7 +20,7 @@ public class WeatherStationData
     public double? InTemperature { get; set; }
     
     [JsonPropertyName("in_hum")]
-    public double? InHumanity { get; set; }
+    public double? InHumidity { get; set; }
     
     [JsonPropertyName("a_pressure")]
     public double? AbsolutePressure { get; set; }

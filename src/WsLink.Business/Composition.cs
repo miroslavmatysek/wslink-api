@@ -8,14 +8,24 @@ namespace WsLink.Business;
 
 public static class Composition
 {
+    private static readonly TimeSpan AdapterTimeout = TimeSpan.FromSeconds(10);
+
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddHttpClient();
+        // The station request waits until all adapters are processed, so an unreachable target must not block it.
+        services.AddHttpClient(HomeAssistantWeatherAdapter.HomeAssistantClientName,
+            client => client.Timeout = AdapterTimeout);
+        services.AddHttpClient(WindyWeatherAdapter.HttpClientName, client => client.Timeout = AdapterTimeout);
+        // openHAB adapter limits the whole update by its own timeout.
+        services.AddHttpClient(OpenHabWeatherAdapter.OpenHabClientName,
+            client => client.Timeout = Timeout.InfiniteTimeSpan);
         services.AddSingleton<IWeatherService, WeatherService>();
         services.AddSingleton<IAdapterFactory, AdapterFactory>();
 
         services.AddSingleton<IWeatherAdapter, HomeAssistantWeatherAdapter>();
         services.AddSingleton<IWeatherAdapter, WindyWeatherAdapter>();
+        services.AddSingleton<IWeatherAdapter, OpenHabWeatherAdapter>();
         services.AddKeyedSingleton<IWeatherAdapter, DummyWeatherAdapter>("dummyWeatherAdapter");
 
         return services;

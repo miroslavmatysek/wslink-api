@@ -12,7 +12,7 @@ namespace WsLink.Business.Adapters;
 public class HomeAssistantWeatherAdapter : IWeatherAdapter
 {
     private const string DefaultHomeAssistantBaseUrl = "http://homeassistant.local:8123";
-    private const string HomeAssistantClientName = "HomeAssistant";
+    internal const string HomeAssistantClientName = "HomeAssistant";
 
     // Missing values are not sent at all, so Home Assistant does not receive them as zeros or nulls.
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
@@ -47,8 +47,17 @@ public class HomeAssistantWeatherAdapter : IWeatherAdapter
                 .PostAsJsonAsync(webhookUri, data, SerializerOptions)
                 .ConfigureAwait(false);
 
-            logger.LogInformation("HomeAssistantWebhookPayload sent [Payload: {@Payload}, status: {StatusCode}]",
-                data, response.StatusCode);
+            if (response.IsSuccessStatusCode)
+                logger.LogInformation("HomeAssistantWebhookPayload sent [Payload: {@Payload}, status: {StatusCode}]",
+                    data, response.StatusCode);
+            else
+                logger.LogWarning("HomeAssistantWebhookPayload rejected [Payload: {@Payload}, status: {StatusCode}]",
+                    data, response.StatusCode);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        {
+            // Expected when Home Assistant is not reachable, the stack trace would only flood the log.
+            logger.LogWarning("Error sending HomeAssistantWebhookPayload [Error: {Error}]", e.Message);
         }
         catch (Exception e)
         {

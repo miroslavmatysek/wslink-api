@@ -26,7 +26,7 @@ public class WsLinkRequestParam
     /// Indoor humidity in percentage.
     /// </summary>
     [FromQuery(Name = "inhum")]
-    public float? InHumanity { get; set; }
+    public float? InHumidity { get; set; }
     
     /// <summary>
     /// Outdoor temperature in celsius degree.
@@ -38,7 +38,7 @@ public class WsLinkRequestParam
     /// Outdoor humidity in percentage.
     /// </summary>
     [FromQuery(Name = "t1hum")]
-    public float? OutHumanity1 { get; set; }
+    public float? OutHumidity1 { get; set; }
 
     /// <summary>
     /// Direction of the wind in degrees.

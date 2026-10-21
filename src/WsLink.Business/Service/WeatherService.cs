@@ -24,9 +24,9 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
         {
             OutSensorConnected = outSensorConnected,
             OutTemperature = Outdoor(requestParam.OutTemperature1),
-            OutHumidity = Outdoor(requestParam.OutHumanity1),
+            OutHumidity = Outdoor(requestParam.OutHumidity1),
             InTemperature = Round(requestParam.InTemperature),
-            InHumanity = Round(requestParam.InHumanity),
+            InHumidity = Round(requestParam.InHumidity),
             AbsolutePressure = Round(requestParam.AbsoluteAirPressure),
             RelativePressure = Round(requestParam.RelativeAirPressure),
             WindDirection = outSensorConnected ? requestParam.WindDirection1 : null,
@@ -46,10 +46,8 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
         logger.LogInformation("Weather data received [Data: {@Payload}]",
             payload);
 
-        foreach (var adapter in adapters)
-        {
-            await adapter.ProcessWeatherDataAsync(payload);
-        }
+        // Adapters are independent, so a slow target does not delay the others.
+        await Task.WhenAll(adapters.Select(adapter => adapter.ProcessWeatherDataAsync(payload)));
     }
 
     private void LogOutSensorConnectionChange(bool outSensorConnected)
@@ -66,6 +64,7 @@ public class WeatherService(ILogger<WeatherService> logger, IAdapterFactory adap
     }
 
     // Non-finite values (e.g. "NaN" in the query) are treated as missing, they cannot be serialized to JSON.
+    // Adding 0.0 turns negative zero (e.g. rounded -0.04) into 0, so "-0" is never sent.
     private static double? Round(double? value) =>
-        value.HasValue && double.IsFinite(value.Value) ? Math.Round(value.Value, 1) : null;
+        value.HasValue && double.IsFinite(value.Value) ? Math.Round(value.Value, 1) + 0.0 : null;
 }
