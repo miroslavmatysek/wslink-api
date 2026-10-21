@@ -60,3 +60,6 @@ appsettings.Development.json
 
 # macOS
 .DS_Store
+
+# Docker Compose variables (secrets)
+.env
