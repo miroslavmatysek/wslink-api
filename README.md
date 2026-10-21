@@ -77,6 +77,7 @@ Observations are sent to the [Windy stations API](https://stations.windy.com)
   (Windy unreachable, error response like `429`) is not retried before the interval elapses.
 - Sent values: temperature, humidity, relative pressure, wind speed, gust and direction, UV index, solar radiation
   and hourly rainfall. Missing values are not sent.
+- The station id is not logged, the logged query contains `id=masked`.
 
 ### openHAB
 

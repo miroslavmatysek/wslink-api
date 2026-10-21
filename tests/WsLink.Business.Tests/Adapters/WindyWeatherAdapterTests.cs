@@ -12,6 +12,7 @@ namespace WsLink.Business.Tests.Adapters;
 public class WindyWeatherAdapterTests
 {
     private readonly ListLogger<WindyWeatherAdapter> logger = new();
+    private readonly FakeTimeProvider timeProvider = new(new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero));
 
     private static WindyConfig CreateConfig() => new()
     {
@@ -23,7 +24,7 @@ public class WindyWeatherAdapterTests
     };
 
     private WindyWeatherAdapter CreateAdapter(FakeHttpMessageHandler handler, WindyConfig? config = null) =>
-        new(new FakeHttpClientFactory(handler), Options.Create(config ?? CreateConfig()), logger);
+        new(new FakeHttpClientFactory(handler), Options.Create(config ?? CreateConfig()), logger, timeProvider);
 
     private static WeatherStationData CreateData() => new()
     {
@@ -110,6 +111,21 @@ public class WindyWeatherAdapterTests
     }
 
     [Fact]
+    public async Task ProcessWeatherDataAsync_DoesNotLogStationId()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(handler);
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(CreateData());
+
+        // Assert
+        Assert.Contains(logger.Entries, e => e.Message.Contains("temp=-3.5"));
+        Assert.DoesNotContain(logger.Entries, e => e.Message.Contains("station-1"));
+    }
+
+    [Fact]
     public async Task ProcessWeatherDataAsync_MissingValues_AreNotSent()
     {
         // Arrange
@@ -137,6 +153,22 @@ public class WindyWeatherAdapterTests
 
         // Assert
         Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public async Task ProcessWeatherDataAsync_AfterUpdateInterval_SendsUpdate()
+    {
+        // Arrange
+        var handler = FakeHttpMessageHandler.Returning(HttpStatusCode.OK);
+        var adapter = CreateAdapter(handler);
+
+        // Act
+        await adapter.ProcessWeatherDataAsync(CreateData());
+        timeProvider.Advance(TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(1));
+        await adapter.ProcessWeatherDataAsync(CreateData());
+
+        // Assert
+        Assert.Equal(2, handler.Requests.Count);
     }
 
     [Fact]

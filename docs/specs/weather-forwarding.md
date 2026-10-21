@@ -51,8 +51,10 @@ a change of behavior must update this spec, the tests and `README.md` together.
 - Query parameters: `temp` (out temperature), `humidity` (out humidity), `mbar` (relative pressure),
   `wind`, `gust`, `winddir`, `uv`, `solarradiation` (light intensity), `precip` (hourly rainfall).
   Doubles are formatted `F1`, integers as is. Missing values are not sent.
-- At most one request per `UpdateInterval` (default 5 min). The interval starts when a request is attempted,
-  so a failed request (unreachable, `429`, …) is not retried before the interval elapses.
+- At most one request per `UpdateInterval` (default 5 min, Windy accepts at most one update per 5 min).
+  The interval starts when a request is attempted, so a failed request (unreachable, `429`, …) is not retried
+  before the interval elapses. It is measured in UTC, so a daylight saving time change does not affect it.
+- The station id is not logged (Debug log of the query has `id=masked`), the password is only in the header.
 
 ## 5. openHAB
 

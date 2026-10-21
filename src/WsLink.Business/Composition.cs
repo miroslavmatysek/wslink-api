@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using WsLink.Business.Adapters;
 using WsLink.Business.Service;
 using WsLink.Common.Adapters;
@@ -13,6 +14,7 @@ public static class Composition
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddHttpClient();
+        services.TryAddSingleton(TimeProvider.System);
         // The station request waits until all adapters are processed, so an unreachable target must not block it.
         services.AddHttpClient(HomeAssistantWeatherAdapter.HomeAssistantClientName,
             client => client.Timeout = AdapterTimeout);
