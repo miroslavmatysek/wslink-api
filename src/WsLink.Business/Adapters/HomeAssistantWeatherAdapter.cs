@@ -32,11 +32,12 @@ public class HomeAssistantWeatherAdapter : IWeatherAdapter
         this.options = options;
         
         var builder = new UriBuilder(options.Value.BaseUrl ?? DefaultHomeAssistantBaseUrl);
-        builder.Path = "api/webhook/" + options.Value.WebhookId;
+        // Appended to the existing path, so a sub-path of BaseUrl (e.g. Home Assistant behind a reverse proxy) is kept.
+        builder.Path = builder.Path.TrimEnd('/') + "/api/webhook/" + options.Value.WebhookId;
         webhookUri = builder.Uri;
     }
 
-    public bool IsEnabled { get => options.Value.Enabled; }
+    public bool IsEnabled { get => options.Value.Enabled && !string.IsNullOrWhiteSpace(options.Value.WebhookId); }
 
     public async Task ProcessWeatherDataAsync(WeatherStationData data)
     {
