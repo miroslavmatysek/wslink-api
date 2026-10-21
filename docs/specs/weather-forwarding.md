@@ -36,7 +36,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
 
    A down target produces at most one Warning per upload.
 6. Secrets are not logged: the station password in request logs is masked by `nlog.config` (`wspw=***`,
-   `${regex-replace}` from `NLog.RegEx`), Windy station id is masked, tokens are only in headers.
+   `${regex-replace}` from `NLog.RegEx`), Windy station id is masked, tokens are only in headers, the MQTT password is never logged.
 7. Numbers sent as text use `CultureInfo.InvariantCulture`.
 
 ## 3. Home Assistant
@@ -88,3 +88,20 @@ a change of behavior must update this spec, the tests and `README.md` together.
 - At most 4 parallel requests, overall timeout 10 s for the whole update.
 - Per-item failures are logged on Debug; one summary per upload: Information when all items were updated,
   otherwise a Warning with failed/total counts, the first error and whether the timeout was hit.
+
+## 6. Gladys Assistant (MQTT)
+
+- Enabled when `Enabled`, `Host` is not blank, `Port` is 1–65535, `DeviceExternalId` is valid and at least one valid
+  feature mapping exists. Otherwise disabled and an Error logged when the adapter is created.
+- A valid external id starts with `mqtt:`, has at least one character after it and contains no whitespace,
+  `/`, `+`, `#` (it is a single MQTT topic level). Ids are trimmed.
+- `Features` maps a `WeatherStationData` property name (case-insensitive) to a feature external id. Unknown property
+  or invalid id → Warning, ignored. Blank id → ignored. Empty `Features` → default mapping of every property to
+  `{DeviceExternalId}:{JsonPropertyName}` (Information logged); a non-empty `Features` replaces the default.
+- Each value is published to `gladys/master/device/{DeviceExternalId}/feature/{FeatureExternalId}/state`,
+  QoS 0, not retained. Payload: number formatted with `CultureInfo.InvariantCulture`, `OutSensorConnected` as `1`/`0`.
+  Missing values are not published; when no mapped value is present, nothing is published.
+- One connection per upload (connect, publish all, disconnect), clean session, client id `ClientId`
+  (default `wslink-api`), optional username/password (password trimmed). Overall timeout 10 s.
+- MQTT communication errors (refused, bad credentials, timeout), socket errors and the timeout → one Warning
+  with the message; other exceptions → Error with the exception.

@@ -1,7 +1,8 @@
 # WsLink.Api
 
 Small ASP.NET Core service that receives data from a weather station using the WS Link "custom server" upload
-and forwards it to [Home Assistant](#home-assistant), [Windy](#windy) and [openHAB](#openhab).
+and forwards it to [Home Assistant](#home-assistant), [Windy](#windy), [openHAB](#openhab) and
+[Gladys Assistant](#gladys-assistant).
 
 How it works:
 
@@ -27,7 +28,7 @@ Example requests are in `src/WsLink.Api/WsLink.Api.http`.
 Configuration is read from `appsettings.json`, `appsettings.{Environment}.json` and environment variables.
 Nested keys use `__` in environment variables, e.g. `HomeAssistant__WebhookId=...`.
 
-Keep secrets (webhook id, Windy station password, openHAB API token) out of the committed `appsettings.json`:
+Keep secrets (webhook id, Windy station password, openHAB API token, MQTT password) out of the committed `appsettings.json`:
 
 - In Docker, pass them as environment variables. The image runs in the `Production` environment,
   so `appsettings.Development.json` is not loaded there. See [Docker](#docker).
@@ -113,6 +114,43 @@ Weather data can be sent to openHAB items via the REST API (`PUT /rest/items/{it
 - Items are updated with at most 4 parallel requests, the whole update is limited to 10 s.
   Failures are logged as a single warning per update (with the first error), details are logged on Debug level.
 - Configuration can be set via environment variables, e.g. `OpenHab__Items__OutTemperature=Garden_Temperature`.
+
+### Gladys Assistant
+
+Gladys has no HTTP endpoint for sensor values, so the data is published to the MQTT broker used by the Gladys
+[MQTT integration](https://gladysassistant.com/docs/integrations/mqtt/)
+(topic `gladys/master/device/{DeviceExternalId}/feature/{FeatureExternalId}/state`, payload is the value).
+
+```json
+"Gladys": {
+  "Enabled": true,
+  "Host": "mqtt.local",
+  "Port": 1883,
+  "Username": "<MQTT user>",
+  "Password": "<MQTT password>",
+  "DeviceExternalId": "mqtt:wslink",
+  "Features": {
+    "OutTemperature": "mqtt:wslink:out_temp"
+  }
+}
+```
+
+- In Gladys, create a device in the MQTT integration with the external id `DeviceExternalId` (default `mqtt:wslink`)
+  and a feature for every value you want, e.g. external id `mqtt:wslink:out_temp`, category temperature sensor.
+- The adapter is enabled when `Enabled` is `true`, `Host` is set, `Port` is valid and `DeviceExternalId` and at least
+  one feature id are valid. External ids must start with `mqtt:` (Gladys requirement) and must not contain whitespace,
+  `/`, `+` or `#`. An invalid configuration disables the adapter and logs an error on the first station upload.
+- `Features` maps a `WeatherStationData` property name (same names as for [openHAB](#openhab)) to a Gladys feature
+  external id. Without `Features`, every property is sent to `{DeviceExternalId}:{payload name}` using the
+  [Home Assistant](#home-assistant) payload names, e.g. `mqtt:wslink:out_temp`, `mqtt:wslink:r_pressure`.
+  A configured `Features` replaces the default mapping as a whole. States for features that do not exist in Gladys
+  are ignored by Gladys.
+- Values are plain numbers in the station units (°C, %, hPa, °, m/s, mm/h, mm, W/m²); `OutSensorConnected` is `1`/`0`.
+  Missing values (e.g. disconnected outdoor sensor) are not sent, Gladys keeps the last state.
+- `Username` and `Password` are optional (anonymous broker). `ClientId` defaults to `wslink-api`.
+- Every upload opens a new connection, publishes all values (QoS 0, not retained) and disconnects.
+  The whole update is limited to 10 s, a failure is logged as a single warning.
+- Configuration can be set via environment variables, e.g. `Gladys__Host=mqtt.local`, `Gladys__Password=...`.
 
 ## Running
 

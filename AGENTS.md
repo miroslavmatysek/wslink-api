@@ -6,12 +6,12 @@ Notes for AI coding agents working on this repository. User-facing documentation
 
 ASP.NET Core (.NET 10) service that receives weather station uploads (WS Link custom server,
 `GET/POST /data/upload.php` with query string parameters, protocol in `docs/API.pdf`) and forwards the data
-to Home Assistant, Windy and openHAB.
+to Home Assistant, Windy, openHAB and Gladys Assistant (MQTT).
 
 | Project                         | Content                                                                    |
 |---------------------------------|----------------------------------------------------------------------------|
 | `src/WsLink.Api`                | Host, controller, `appsettings.json`, `nlog.config`, version               |
-| `src/WsLink.Business`           | `WeatherService`, adapters (`Adapters/`), DI and HttpClient registration   |
+| `src/WsLink.Business`           | `WeatherService`, adapters (`Adapters/`), MQTT publisher (`Mqtt/`), DI     |
 | `src/WsLink.Common`             | Contracts (`WsLinkRequestParam`, `WeatherStationData`), config classes, interfaces |
 | `tests/WsLink.Business.Tests`   | Unit tests (xUnit v4)                                                      |
 | `src/WsLink.DataProvider`       | Empty placeholder, not in the solution                                     |
@@ -66,7 +66,7 @@ dotnet run --project src/WsLink.Api --urls http://0.0.0.0:8080
 - No mocking library. Use the fakes in `tests/WsLink.Business.Tests/Fakes`:
   `FakeHttpMessageHandler` (records requests incl. content, `Returning`/`Throwing` helpers),
   `FakeHttpClientFactory`, `ListLogger<T>` (captures level, message and exception), `FakeWeatherAdapter`,
-  `FakeAdapterFactory`, `CultureScope` (e.g. `cs-CZ` to check invariant number formatting).
+  `FakeAdapterFactory`, `FakeMqttPublisher`, `CultureScope` (e.g. `cs-CZ` to check invariant number formatting).
 - Pass `TestContext.Current.CancellationToken` to methods accepting a `CancellationToken` (analyzer xUnit1051).
 - Avoid midpoint inputs in rounding tests (`x.x5`), `Math.Round` uses banker's rounding and binary floats
   are inexact.
@@ -76,7 +76,7 @@ dotnet run --project src/WsLink.Api --urls http://0.0.0.0:8080
 
 - Config sources: `appsettings.json`, `appsettings.{Environment}.json`, environment variables (`Section__Key`).
 - `appsettings.Development.json` is git-ignored and holds real local settings. Do not print secrets
-  from it (mask `WebhookId`, `StationPassword`, `ApiToken`, `StationId`).
+  from it (mask `WebhookId`, `StationPassword`, `ApiToken`, `StationId`, `Password`).
 - Do not read `.env` files, they contain secrets.
 - Never commit secrets to `appsettings.json`; it holds only non-secret defaults (`Enabled: false` etc.).
 

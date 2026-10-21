@@ -11,6 +11,7 @@ public static class Composition
         services.Configure<HomeAssistantConfig>(config.GetSection(HomeAssistantConfig.ConfigSectionName));
         services.Configure<WindyConfig>(config.GetSection(WindyConfig.ConfigSectionName));
         services.Configure<OpenHabConfig>(config.GetSection(OpenHabConfig.ConfigSectionName));
+        services.Configure<GladysConfig>(config.GetSection(GladysConfig.ConfigSectionName));
 
         return services;
     }

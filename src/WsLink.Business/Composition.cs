@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using WsLink.Business.Adapters;
+using WsLink.Business.Mqtt;
 using WsLink.Business.Service;
 using WsLink.Common.Adapters;
 using WsLink.Common.Service;
@@ -22,12 +23,15 @@ public static class Composition
         // openHAB adapter limits the whole update by its own timeout.
         services.AddHttpClient(OpenHabWeatherAdapter.OpenHabClientName,
             client => client.Timeout = Timeout.InfiniteTimeSpan);
+        // Gladys adapter limits the whole MQTT update by its own timeout.
+        services.AddSingleton<IMqttPublisher, MqttNetPublisher>();
         services.AddSingleton<IWeatherService, WeatherService>();
         services.AddSingleton<IAdapterFactory, AdapterFactory>();
 
         services.AddSingleton<IWeatherAdapter, HomeAssistantWeatherAdapter>();
         services.AddSingleton<IWeatherAdapter, WindyWeatherAdapter>();
         services.AddSingleton<IWeatherAdapter, OpenHabWeatherAdapter>();
+        services.AddSingleton<IWeatherAdapter, GladysWeatherAdapter>();
         services.AddKeyedSingleton<IWeatherAdapter, DummyWeatherAdapter>("dummyWeatherAdapter");
 
         return services;
