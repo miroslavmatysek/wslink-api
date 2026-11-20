@@ -210,7 +210,17 @@ command fails without it) and optionally `OPENHAB_API_TOKEN`, e.g. in a `.env` f
 ```env
 OPENHAB_BASE_URL=http://openhab.local:8080
 OPENHAB_API_TOKEN=<openHAB API token>
+POSTGRES_PASSWORD=<database password>
 ```
+
+`compose.yaml` also runs a TimescaleDB `postgres` service (database and user `wslink`, data in the `postgres_data`
+volume, port `5432` reachable only from the compose network) and stores the data there. It requires
+`POSTGRES_PASSWORD`; avoid `;` and `"` in it, it is inserted into the connection string as is.
+`docs/sql/timescaledb.sql` is mounted into `/docker-entrypoint-initdb.d`, so the table is created on the first
+start with an empty volume. The script is not run again later; for an existing volume run it manually, e.g.
+`docker compose exec -T postgres psql -U wslink -d wslink < docs/sql/timescaledb.sql`.
+The password is applied only when the volume is initialized, changing it later requires `ALTER USER` as well.
+`compose.yaml` mounts the script from the repository, so run `docker compose` from a checkout of the repository.
 
 Pass the configuration (including secrets) as environment variables of the `wslink.api` service,
 e.g. in `compose.yaml` or in a `.env` file next to it (keep it out of git):
