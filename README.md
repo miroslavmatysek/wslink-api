@@ -2,7 +2,7 @@
 
 Small ASP.NET Core service that receives data from a weather station using the WS Link "custom server" upload
 and forwards it to [Home Assistant](#home-assistant), [Windy](#windy), [openHAB](#openhab) and
-[Gladys Assistant](#gladys-assistant).
+[Gladys Assistant](#gladys-assistant), and stores it in [PostgreSQL / TimescaleDB](#postgresql--timescaledb).
 
 How it works:
 
@@ -28,7 +28,7 @@ Example requests are in `src/WsLink.Api/WsLink.Api.http`.
 Configuration is read from `appsettings.json`, `appsettings.{Environment}.json` and environment variables.
 Nested keys use `__` in environment variables, e.g. `HomeAssistant__WebhookId=...`.
 
-Keep secrets (webhook id, Windy station password, openHAB API token, MQTT password) out of the committed `appsettings.json`:
+Keep secrets (webhook id, Windy station password, openHAB API token, MQTT password, Postgres connection string) out of the committed `appsettings.json`:
 
 - In Docker, pass them as environment variables. The image runs in the `Production` environment,
   so `appsettings.Development.json` is not loaded there. See [Docker](#docker).
@@ -154,6 +154,34 @@ Gladys has no HTTP endpoint for sensor values, so the data is published to the M
 - Every upload opens a new connection, publishes all values (QoS 0, not retained) and disconnects.
   The whole update is limited to 10 s, a failure is logged as a single warning.
 - Configuration can be set via environment variables, e.g. `Gladys__Host=mqtt.local`, `Gladys__Password=...`.
+
+### PostgreSQL / TimescaleDB
+
+Every upload is stored as one row of the `weather_data` table, a [TimescaleDB](https://www.timescale.com)
+hypertable partitioned by `time`. Suitable e.g. as a Grafana data source.
+
+```json
+"Postgres": {
+  "Enabled": true,
+  "ConnectionString": "Host=postgres.local;Database=wslink;Username=wslink;Password=<password>"
+}
+```
+
+- The service does not create the table. Run `docs/sql/timescaledb.sql` once in the target database
+  (needs the TimescaleDB extension installed on the server and a user allowed to create it), e.g.
+  `psql -h postgres.local -U wslink -d wslink -f docs/sql/timescaledb.sql`. The service user then needs
+  only `INSERT` on `weather_data`. The `postgres` service in `compose.yaml` runs the script automatically,
+  see [Docker](#docker).
+- The adapter is enabled when `Enabled` is `true` and `ConnectionString` is a valid
+  [Npgsql connection string](https://www.npgsql.org/doc/connection-string-parameters.html) with `Host` and
+  `Database`. An invalid connection string disables the adapter and logs an error on the first station upload.
+  The connection string is never logged.
+- Columns: `time` (time of receipt by the service, `timestamptz`) and one column per value named like the
+  [Home Assistant](#home-assistant) payload (`out_temp`, `r_pressure`, `wind_speed`, …), in the station units
+  (°C, %, hPa, °, m/s, mm/h, mm, W/m²). Missing values (e.g. disconnected outdoor sensor) are `NULL`.
+- Every upload is inserted (no rate limit), the insert is limited to 10 s, a failure is logged as a single warning.
+  A failed insert is not retried, the row is missing.
+- Configuration can be set via environment variables, e.g. `Postgres__ConnectionString=...`.
 
 ## Running
 

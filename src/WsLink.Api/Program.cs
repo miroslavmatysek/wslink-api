@@ -1,6 +1,7 @@
 using NLog.Web;
 using WsLink.Business;
 using WsLink.Common;
+using WsLink.DataProvider;
 
 namespace WsLink.Api;
 
@@ -25,6 +26,7 @@ public class Program
         builder.Services
             .AddConfigOptions(builder.Configuration)
             .AddServices()
+            .AddDataProviders()
             .AddHealthChecks();
 
         var app = builder.Build();

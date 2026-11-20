@@ -9,12 +9,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
         <PackageReference Include="xunit.v3" Version="4.0.2" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\WsLink.Business\WsLink.Business.csproj" />
         <ProjectReference Include="..\..\src\WsLink.Common\WsLink.Common.csproj" />
+        <ProjectReference Include="..\..\src\WsLink.DataProvider\WsLink.DataProvider.csproj" />
     </ItemGroup>
 
     <ItemGroup>

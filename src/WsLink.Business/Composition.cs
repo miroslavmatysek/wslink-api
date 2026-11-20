@@ -31,6 +31,7 @@ public static class Composition
         services.AddSingleton<IWeatherAdapter, WindyWeatherAdapter>();
         services.AddSingleton<IWeatherAdapter, OpenHabWeatherAdapter>();
         services.AddSingleton<IWeatherAdapter, GladysWeatherAdapter>();
+        services.AddSingleton<IWeatherAdapter, PostgresWeatherAdapter>();
         services.AddKeyedSingleton<IWeatherAdapter, DummyWeatherAdapter>("dummyWeatherAdapter");
 
         return services;

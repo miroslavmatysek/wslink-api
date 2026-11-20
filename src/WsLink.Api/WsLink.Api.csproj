@@ -19,6 +19,7 @@
     <ItemGroup>
       <ProjectReference Include="..\WsLink.Business\WsLink.Business.csproj" />
       <ProjectReference Include="..\WsLink.Common\WsLink.Common.csproj" />
+      <ProjectReference Include="..\WsLink.DataProvider\WsLink.DataProvider.csproj" />
     </ItemGroup>
 
 </Project>

@@ -6,15 +6,19 @@ Notes for AI coding agents working on this repository. User-facing documentation
 
 ASP.NET Core (.NET 10) service that receives weather station uploads (WS Link custom server,
 `GET/POST /data/upload.php` with query string parameters, protocol in `docs/API.pdf`) and forwards the data
-to Home Assistant, Windy, openHAB and Gladys Assistant (MQTT).
+to Home Assistant, Windy, openHAB and Gladys Assistant (MQTT), and stores it in PostgreSQL / TimescaleDB.
 
 | Project                         | Content                                                                    |
 |---------------------------------|----------------------------------------------------------------------------|
 | `src/WsLink.Api`                | Host, controller, `appsettings.json`, `nlog.config`, version               |
 | `src/WsLink.Business`           | `WeatherService`, adapters (`Adapters/`), MQTT publisher (`Mqtt/`), DI     |
-| `src/WsLink.Common`             | Contracts (`WsLinkRequestParam`, `WeatherStationData`), config classes, interfaces |
+| `src/WsLink.Common`             | Contracts (`WsLinkRequestParam`, `WeatherStationData`), config classes, interfaces (incl. `IWeatherDataProvider`) |
 | `tests/WsLink.Business.Tests`   | Unit tests (xUnit v4)                                                      |
-| `src/WsLink.DataProvider`       | Empty placeholder, not in the solution                                     |
+| `src/WsLink.DataProvider`       | Database access implementations (Postgres: Dapper + Npgsql in `Database/Postgres/`), DI (`AddDataProviders`) |
+
+`WsLink.Business` must not reference `WsLink.DataProvider` or any database driver (Npgsql, Dapper). Database access
+goes through interfaces in `WsLink.Common/DataProvider` (`IWeatherDataProvider`, driver errors wrapped in
+`DataProviderException`); implementations are registered by `AddDataProviders()` in `Program.cs`.
 
 Flow: `WsLinkDataController` → `WeatherService.SaveWeatherData` (rounding, outdoor sensor handling) →
 all enabled `IWeatherAdapter`s in parallel (`Task.WhenAll`). `AdapterFactory` returns enabled adapters,
@@ -63,10 +67,11 @@ dotnet run --project src/WsLink.Api --urls http://0.0.0.0:8080
 - xUnit v4 = NuGet package `xunit.v3` version 4.x (there is no `xunit.v4` package). Test project is `OutputType Exe`.
 - **AAA style is required**: every test has `// Arrange`, `// Act`, `// Assert` sections, and the action
   is not hidden inside an assert (`var isEnabled = adapter.IsEnabled;` in Act, then assert it).
+- Assertions: new tests use AwesomeAssertions (`Should()`), the older tests still use xUnit `Assert`.
 - No mocking library. Use the fakes in `tests/WsLink.Business.Tests/Fakes`:
   `FakeHttpMessageHandler` (records requests incl. content, `Returning`/`Throwing` helpers),
   `FakeHttpClientFactory`, `ListLogger<T>` (captures level, message and exception), `FakeWeatherAdapter`,
-  `FakeAdapterFactory`, `FakeMqttPublisher`, `CultureScope` (e.g. `cs-CZ` to check invariant number formatting).
+  `FakeAdapterFactory`, `FakeMqttPublisher`, `FakeWeatherDataProvider`, `CultureScope` (e.g. `cs-CZ` to check invariant number formatting).
 - Pass `TestContext.Current.CancellationToken` to methods accepting a `CancellationToken` (analyzer xUnit1051).
 - Avoid midpoint inputs in rounding tests (`x.x5`), `Math.Round` uses banker's rounding and binary floats
   are inexact.
@@ -76,7 +81,7 @@ dotnet run --project src/WsLink.Api --urls http://0.0.0.0:8080
 
 - Config sources: `appsettings.json`, `appsettings.{Environment}.json`, environment variables (`Section__Key`).
 - `appsettings.Development.json` is git-ignored and holds real local settings. Do not print secrets
-  from it (mask `WebhookId`, `StationPassword`, `ApiToken`, `StationId`, `Password`).
+  from it (mask `WebhookId`, `StationPassword`, `ApiToken`, `StationId`, `Password`, `ConnectionString`).
 - Do not read `.env` files, they contain secrets.
 - Never commit secrets to `appsettings.json`; it holds only non-secret defaults (`Enabled: false` etc.).
 

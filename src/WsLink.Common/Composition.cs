@@ -12,6 +12,7 @@ public static class Composition
         services.Configure<WindyConfig>(config.GetSection(WindyConfig.ConfigSectionName));
         services.Configure<OpenHabConfig>(config.GetSection(OpenHabConfig.ConfigSectionName));
         services.Configure<GladysConfig>(config.GetSection(GladysConfig.ConfigSectionName));
+        services.Configure<PostgresConfig>(config.GetSection(PostgresConfig.ConfigSectionName));
 
         return services;
     }

@@ -36,7 +36,8 @@ a change of behavior must update this spec, the tests and `README.md` together.
 
    A down target produces at most one Warning per upload.
 6. Secrets are not logged: the station password in request logs is masked by `nlog.config` (`wspw=***`,
-   `${regex-replace}` from `NLog.RegEx`), Windy station id is masked, tokens are only in headers, the MQTT password is never logged.
+   `${regex-replace}` from `NLog.RegEx`), Windy station id is masked, tokens are only in headers, the MQTT password and the Postgres connection string
+   are never logged.
 7. Numbers sent as text use `CultureInfo.InvariantCulture`.
 
 ## 3. Home Assistant
@@ -109,3 +110,25 @@ a change of behavior must update this spec, the tests and `README.md` together.
 - A failed disconnect after all messages were published is ignored, the update counts as successful.
 - MQTT communication errors (refused, bad credentials, timeout), socket and I/O errors and the timeout → one Warning
   with the message; other exceptions → Error with the exception.
+
+## 7. PostgreSQL / TimescaleDB
+
+- Split: `PostgresWeatherAdapter` (`WsLink.Business`) uses only `IWeatherDataProvider` and `DataProviderException`
+  from `WsLink.Common`; `DapperWeatherDataProvider` (`WsLink.DataProvider`) holds the configuration, Npgsql and Dapper.
+  `WsLink.Business` must not reference `WsLink.DataProvider` or the database driver.
+- Enabled when `Enabled` and `ConnectionString` (trimmed) is a valid Npgsql connection string with `Host` and
+  `Database` (validated by the data provider). Otherwise disabled and an Error logged when the data provider is
+  created, i.e. with the adapter on the first station upload.
+  The Error contains no part of the connection string except host and database; the parser message is not logged,
+  because an unquoted password containing `;` is reported as an unknown keyword.
+- The table is not created by the service; `docs/sql/timescaledb.sql` creates the `weather_data` hypertable
+  (`create_hypertable` by `time`). The `compose.yaml` postgres service runs it on volume initialization.
+- One `INSERT` into `weather_data` per upload (Dapper, parameterized). Column `time` = `TimeProvider` UTC time of
+  receipt; the other columns are named by the `JsonPropertyName` of `WeatherStationData`. Missing values are `NULL`.
+  A test checks that the `INSERT` and the script cover every `WeatherStationData` property.
+- Connection per upload from the Npgsql pool, overall timeout 10 s (cancellation token for connect + command).
+- The data provider wraps `NpgsqlException` (incl. `PostgresException`, e.g. missing table, bad credentials), socket,
+  I/O and timeout errors into `DataProviderException` (same message); cancellation is not wrapped.
+  `DataProviderException` and the timeout (`OperationCanceledException`) → one Warning with the message and the
+  innermost exception message as `Cause` (e.g. `Connection refused`); other exceptions → Error with the exception.
+  A failed insert is not retried.
