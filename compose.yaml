@@ -20,7 +20,7 @@
       - postgres
 
   postgres:
-    image: timescale/timescaledb:2.32.1-pg17
+    image: timescale/timescaledb:2.32.1-pg18
     environment:
       POSTGRES_DB: wslink
       POSTGRES_USER: wslink
@@ -28,7 +28,9 @@
     expose:
       - "5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images keep the data in a version subdirectory (PGDATA=/var/lib/postgresql/18/docker),
+      # so the volume is mounted one level up; a major upgrade then does not mix data of two versions.
+      - postgres_data:/var/lib/postgresql
       # Runs only when the data volume is empty (first start), an existing database is not changed.
       - ./docs/sql/timescaledb.sql:/docker-entrypoint-initdb.d/100_weather_data.sql:ro
 
