@@ -6,7 +6,8 @@ using WsLink.Common.DataProvider;
 namespace WsLink.Business.Adapters;
 
 /// <summary>
-/// Stores every upload as one row of the weather_data table (TimescaleDB hypertable, see docs/sql/timescaledb.sql).
+/// Stores every upload as one row of the weather_data table
+/// (TimescaleDB hypertable, see scripts/database/timescaledb.sql).
 /// The database access and its configuration are in <see cref="IWeatherDataProvider"/> (WsLink.DataProvider),
 /// Business does not depend on the database driver.
 /// </summary>

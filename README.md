@@ -167,11 +167,19 @@ hypertable partitioned by `time`. Suitable e.g. as a Grafana data source.
 }
 ```
 
-- The service does not create the table. Run `docs/sql/timescaledb.sql` once in the target database
-  (needs the TimescaleDB extension installed on the server and a user allowed to create it), e.g.
-  `psql -h postgres.local -U wslink -d wslink -f docs/sql/timescaledb.sql`. The service user then needs
-  only `INSERT` on `weather_data`. The `postgres` service in `compose.yaml` runs the script automatically,
-  see [Docker](#docker).
+- The service does not create the database or the table. On an existing PostgreSQL server with the TimescaleDB
+  extension installed, run `scripts/database/create-database.sql` once as a superuser. It creates the user and
+  database `wslink`, the `weather_data` table (`scripts/database/timescaledb.sql`) and grants the user only `INSERT`:
+
+  ```sh
+  psql -h postgres.local -U postgres -d postgres -v password='<password of wslink>' -f scripts/database/create-database.sql
+  ```
+
+  It can be run again, existing objects are kept (the password of an existing user is not changed).
+  Without `-v password=...` or with an empty password it fails and creates nothing.
+  To create only the table in an existing database, run `scripts/database/timescaledb.sql` in it
+  (as a user allowed to create the extension).
+  The `postgres` service in `compose.yaml` creates everything itself, see [Docker](#docker).
 - The adapter is enabled when `Enabled` is `true` and `ConnectionString` is a valid
   [Npgsql connection string](https://www.npgsql.org/doc/connection-string-parameters.html) with `Host` and
   `Database`. An invalid connection string disables the adapter and logs an error on the first station upload.
@@ -216,9 +224,9 @@ POSTGRES_PASSWORD=<database password>
 `compose.yaml` also runs a TimescaleDB `postgres` service (database and user `wslink`, data in the `postgres_data`
 volume, port `5432` reachable only from the compose network) and stores the data there. It requires
 `POSTGRES_PASSWORD`; avoid `;` and `"` in it, it is inserted into the connection string as is.
-`docs/sql/timescaledb.sql` is mounted into `/docker-entrypoint-initdb.d`, so the table is created on the first
+`scripts/database/timescaledb.sql` is mounted into `/docker-entrypoint-initdb.d`, so the table is created on the first
 start with an empty volume. The script is not run again later; for an existing volume run it manually, e.g.
-`docker compose exec -T postgres psql -U wslink -d wslink < docs/sql/timescaledb.sql`.
+`docker compose exec -T postgres psql -U wslink -d wslink < scripts/database/timescaledb.sql`.
 The password is applied only when the volume is initialized, changing it later requires `ALTER USER` as well.
 `compose.yaml` mounts the script from the repository, so run `docker compose` from a checkout of the repository.
 

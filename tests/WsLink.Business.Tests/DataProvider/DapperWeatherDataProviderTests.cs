@@ -220,7 +220,7 @@ public class DapperWeatherDataProviderTests
     public void CreateTableScript_ContainsEveryInsertedColumn()
     {
         // Arrange
-        var script = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "docs", "sql", "timescaledb.sql"));
+        var script = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "scripts", "database", "timescaledb.sql"));
         var columns = ColumnList(DapperWeatherDataProvider.InsertSql, "weather_data");
 
         // Act

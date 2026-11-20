@@ -6,7 +6,7 @@ public class PostgresConfig
 
     /// <summary>
     /// Npgsql connection string, e.g. Host=postgres;Database=wslink;Username=wslink;Password=...
-    /// The table is created by docs/sql/timescaledb.sql, not by the service.
+    /// The table is created by scripts/database/timescaledb.sql, not by the service.
     /// </summary>
     public string? ConnectionString { get; set; }
 

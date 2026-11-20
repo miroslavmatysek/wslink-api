@@ -12,7 +12,7 @@ namespace WsLink.DataProvider.Database.Postgres;
 public sealed class DapperWeatherDataProvider : IWeatherDataProvider
 {
     // Column names are the JsonPropertyName of WeatherStationData (the Home Assistant payload names),
-    // so the same names are used in every target. Must match docs/sql/timescaledb.sql.
+    // so the same names are used in every target. Must match scripts/database/timescaledb.sql.
     internal const string InsertSql =
         """
         INSERT INTO weather_data (

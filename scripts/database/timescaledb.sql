@@ -1,6 +1,6 @@
 -- Table for the Postgres adapter of WsLink.Api (TimescaleDB hypertable).
 -- Run once in the target database as a user allowed to create extensions, e.g.
---   psql -h <host> -U <user> -d wslink -f docs/sql/timescaledb.sql
+--   psql -h <host> -U <user> -d wslink -f scripts/database/timescaledb.sql
 -- The compose.yaml postgres service runs it automatically when its data volume is initialized.
 -- Column names match the JsonPropertyName of WeatherStationData and the INSERT in DapperWeatherDataProvider.
 

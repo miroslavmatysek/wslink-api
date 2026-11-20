@@ -121,8 +121,13 @@ a change of behavior must update this spec, the tests and `README.md` together.
   created, i.e. with the adapter on the first station upload.
   The Error contains no part of the connection string except host and database; the parser message is not logged,
   because an unquoted password containing `;` is reported as an unknown keyword.
-- The table is not created by the service; `docs/sql/timescaledb.sql` creates the `weather_data` hypertable
+- The table is not created by the service; `scripts/database/timescaledb.sql` creates the `weather_data` hypertable
   (`create_hypertable` by `time`). The `compose.yaml` postgres service runs it on volume initialization.
+- `scripts/database/create-database.sql` (psql, superuser, `-v password=...`) sets up an existing server: user
+  `wslink`, database `wslink` owned by the superuser (the database owner would own the `public` schema and could
+  drop the table), then `timescaledb.sql`. The user gets only `CONNECT`, `USAGE` on `public` and `INSERT` on
+  `weather_data`; `CREATE` on `public` is revoked from `PUBLIC`. A missing, empty or blank password fails before
+  anything is created. Re-running keeps existing objects, their owner and the password.
 - One `INSERT` into `weather_data` per upload (Dapper, parameterized). Column `time` = `TimeProvider` UTC time of
   receipt; the other columns are named by the `JsonPropertyName` of `WeatherStationData`. Missing values are `NULL`.
   A test checks that the `INSERT` and the script cover every `WeatherStationData` property.

@@ -32,7 +32,7 @@
       # so the volume is mounted one level up; a major upgrade then does not mix data of two versions.
       - postgres_data:/var/lib/postgresql
       # Runs only when the data volume is empty (first start), an existing database is not changed.
-      - ./docs/sql/timescaledb.sql:/docker-entrypoint-initdb.d/100_weather_data.sql:ro
+      - ./scripts/database/timescaledb.sql:/docker-entrypoint-initdb.d/100_weather_data.sql:ro
 
   caddy:
     image: caddy:2
