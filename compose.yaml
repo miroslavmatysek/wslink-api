@@ -1,7 +1,7 @@
 ﻿services:
   wslink.api:
-    image: 192.168.88.28:5000/wslink-api:v0.2.0
-    #image: wslink-api:v0.2.0
+    image: 192.168.88.28:5000/wslink-api:v0.3.0
+    #image: wslink-api:v0.3.0
     build:
       context: .
       dockerfile: Dockerfile
