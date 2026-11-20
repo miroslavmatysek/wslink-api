@@ -25,6 +25,7 @@ public static class Composition
             client => client.Timeout = Timeout.InfiniteTimeSpan);
         services.AddSingleton<IMqttPublisher, MqttNetPublisher>();
         services.AddSingleton<IWeatherService, WeatherService>();
+        services.AddSingleton<IWeatherHistoryService, WeatherHistoryService>();
         services.AddSingleton<IAdapterFactory, AdapterFactory>();
 
         services.AddSingleton<IWeatherAdapter, HomeAssistantWeatherAdapter>();

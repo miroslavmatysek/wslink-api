@@ -216,6 +216,114 @@ public class DapperWeatherDataProviderTests
         values[0].Should().Be("@Time");
     }
 
+    public static TheoryData<string, string> RecordProperties()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var property in typeof(WeatherRecord).GetProperties())
+            data.Add(property.Name, property.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(RecordProperties))]
+    public void SelectColumns_EveryRecordProperty_IsReadFromColumnWithJsonName(string propertyName, string columnName)
+    {
+        // Arrange
+        var columns = DapperWeatherDataProvider.SelectColumns;
+
+        // Act
+        var selected = columns.Split(',', StringSplitOptions.TrimEntries);
+
+        // Assert
+        selected.Should().Contain($"{columnName} AS {propertyName}");
+    }
+
+    [Fact]
+    public void SelectColumns_HasOneColumnPerRecordProperty()
+    {
+        // Arrange
+        var columns = DapperWeatherDataProvider.SelectColumns;
+
+        // Act
+        var selected = columns.Split(',', StringSplitOptions.TrimEntries);
+
+        // Assert
+        selected.Should().HaveCount(typeof(WeatherRecord).GetProperties().Length).And.OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void SelectRangeSql_FiltersHalfOpenRangeAndLimitsNewestRows()
+    {
+        // Arrange
+        var sql = DapperWeatherDataProvider.SelectRangeSql;
+
+        // Act
+        var normalized = Regex.Replace(sql, @"\s+", " ");
+
+        // Assert
+        // Newest first, so LIMIT drops the oldest rows; the result is reversed by NewestFirstToAscending.
+        normalized.Should().Contain("WHERE time >= @From AND time < @To ORDER BY time DESC LIMIT @Limit");
+    }
+
+    [Fact]
+    public void SelectLatestSql_ReturnsNewestRow()
+    {
+        // Arrange
+        var sql = DapperWeatherDataProvider.SelectLatestSql;
+
+        // Act
+        var normalized = Regex.Replace(sql, @"\s+", " ");
+
+        // Assert
+        normalized.Should().EndWith("ORDER BY time DESC LIMIT 1");
+    }
+
+    [Fact]
+    public void AggregatedColumns_EveryRecordPropertyHasExactlyOneAlias()
+    {
+        // Arrange
+        var columns = DapperWeatherDataProvider.AggregatedColumns;
+
+        // Act
+        var aliases = Regex.Matches(columns, @"\bAS (\w+)").Select(m => m.Groups[1].Value).ToList();
+
+        // Assert
+        aliases.Should().BeEquivalentTo(typeof(WeatherRecord).GetProperties().Select(p => p.Name));
+    }
+
+    [Fact]
+    public void SelectAggregatedRangeSql_GroupsByBucketAndLimitsNewestBuckets()
+    {
+        // Arrange
+        var sql = DapperWeatherDataProvider.SelectAggregatedRangeSql;
+
+        // Act
+        var normalized = Regex.Replace(sql, @"\s+", " ");
+
+        // Assert
+        normalized.Should().Contain("time_bucket(@Bucket, time) AS Time")
+            .And.Contain("WHERE time >= @From AND time < @To GROUP BY 1 ORDER BY 1 DESC LIMIT @Limit");
+    }
+
+    [Fact]
+    public void NewestFirstToAscending_NewestFirstRows_ReturnsAscendingTime()
+    {
+        // Arrange
+        var start = new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.Zero);
+        var newestFirst = new List<WeatherRecord>
+        {
+            new() { Time = start.AddMinutes(2) },
+            new() { Time = start.AddMinutes(1) },
+            new() { Time = start },
+        };
+
+        // Act
+        var result = DapperWeatherDataProvider.NewestFirstToAscending(newestFirst);
+
+        // Assert
+        result.Select(r => r.Time).Should().Equal(start, start.AddMinutes(1), start.AddMinutes(2));
+    }
+
     [Fact]
     public void CreateTableScript_ContainsEveryInsertedColumn()
     {

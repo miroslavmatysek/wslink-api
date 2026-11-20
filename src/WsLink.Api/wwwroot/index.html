@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WsLink weather</title>
+<!-- Self-contained (no CDN): the service usually runs on a LAN without guaranteed internet access. -->
+<style>
+  :root {
+    /* Native controls (select list, scrollbars) follow the page theme. */
+    color-scheme: light dark;
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #667085; --border: #e3e6eb;
+    --accent: #2563eb; --accent-soft: rgba(37, 99, 235, .12); --error: #b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --text: #e6e9ef; --muted: #98a2b3; --border: #2b3240;
+      --accent: #6aa0ff; --accent-soft: rgba(106, 160, 255, .15); --error: #f97066;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 16px; margin: 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .error { color: var(--error); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 16px 0 24px; }
+  .tile { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .tile .label { color: var(--muted); font-size: 12px; }
+  .tile .value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile .unit { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+             margin-bottom: 10px; }
+  select, button { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border);
+                   border-radius: 8px; padding: 5px 10px; }
+  button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .ranges { display: flex; gap: 6px; }
+  svg { display: block; width: 100%; height: 320px; }
+  svg text { fill: var(--muted); font-size: 11px; }
+  .gridline { stroke: var(--border); }
+  .line { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .area { fill: var(--accent-soft); }
+  .point { fill: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Weather station</h1>
+    <span id="status" class="muted">Loading…</span>
+  </header>
+
+  <div id="tiles" class="grid"></div>
+
+  <section class="card">
+    <div class="toolbar">
+      <h2>History</h2>
+      <div class="ranges">
+        <select id="metric" aria-label="Value"></select>
+        <button type="button" data-hours="6">6 h</button>
+        <button type="button" data-hours="24" aria-pressed="true">24 h</button>
+        <button type="button" data-hours="168">7 d</button>
+      </div>
+    </div>
+    <svg id="chart" role="img" aria-label="History chart"></svg>
+    <div id="chartInfo" class="muted"></div>
+  </section>
+</main>
+
+<script>
+  // JSON names of /api/weather (same as the Home Assistant payload).
+  const METRICS = [
+    { key: "out_temp", label: "Outdoor temperature", unit: "°C" },
+    { key: "out_hum", label: "Outdoor humidity", unit: "%" },
+    { key: "dew_point", label: "Dew point", unit: "°C" },
+    { key: "in_temp", label: "Indoor temperature", unit: "°C" },
+    { key: "in_hum", label: "Indoor humidity", unit: "%" },
+    { key: "r_pressure", label: "Pressure (relative)", unit: "hPa" },
+    { key: "wind_speed", label: "Wind speed", unit: "m/s" },
+    { key: "wind_gust", label: "Wind gust", unit: "m/s" },
+    { key: "wind_direction", label: "Wind direction", unit: "°" },
+    { key: "rain_rate", label: "Rain rate", unit: "mm/h" },
+    { key: "rainfall_daily", label: "Rain today", unit: "mm" },
+    { key: "uvi", label: "UV index", unit: "" },
+    { key: "light_intensity", label: "Light", unit: "W/m²" },
+  ];
+  const REFRESH_MS = 60_000;
+  // Bucket in minutes per range (null = raw rows): about 300-700 points, so even 7 days is a small response.
+  const BUCKET_MINUTES = { 6: null, 24: 2, 168: 30 };
+
+  const $ = id => document.getElementById(id);
+  const metricSelect = $("metric");
+  let hours = 24;
+
+  for (const m of METRICS) metricSelect.add(new Option(m.label, m.key));
+
+  async function fetchJson(url) {
+    const response = await fetch(url, { cache: "no-store" });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(body?.detail ?? `HTTP ${response.status}`);
+    // Server time (second precision), the stored rows carry it too; the browser clock may differ.
+    const date = Date.parse(response.headers.get("Date"));
+    return {
+      body,
+      truncated: response.headers.get("X-Result-Truncated") === "true",
+      serverNow: Number.isNaN(date) ? Date.now() : date,
+    };
+  }
+
+  const formatTime = iso => new Date(iso).toLocaleString();
+
+  function renderTiles(latest) {
+    const tiles = $("tiles");
+    tiles.replaceChildren();
+    for (const m of METRICS) {
+      const value = latest[m.key];
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `<div class="label"></div><div class="value"></div>`;
+      tile.querySelector(".label").textContent = m.label;
+      const valueEl = tile.querySelector(".value");
+      valueEl.textContent = value ?? "–";
+      if (value != null && m.unit) {
+        const unit = document.createElement("span");
+        unit.className = "unit";
+        unit.textContent = m.unit;
+        valueEl.append(unit);
+      }
+      tiles.append(tile);
+    }
+  }
+
+  function svgEl(name, attrs, text) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    if (text != null) el.textContent = text;
+    return el;
+  }
+
+  // Two points further apart than this are not connected, so a gap in the data (station offline, sensor
+  // disconnected) is not drawn as a straight line that looks like real measurements.
+  function gapThreshold(points) {
+    const intervals = points.slice(1).map((p, i) => p.t - points[i].t).sort((a, b) => a - b);
+    const typical = intervals.length ? intervals[Math.floor(intervals.length / 2)] : 0;
+    return Math.max(typical * 5, 5 * 60_000);
+  }
+
+  // The range carries its own hours, so a redraw (metric change, resize) while a newer range is loading
+  // keeps the axis labels matching the data that is drawn.
+  function renderChart({ records, from, to, hours, truncated }) {
+    const metric = METRICS.find(m => m.key === metricSelect.value);
+    const svg = $("chart");
+    svg.replaceChildren();
+    const width = svg.clientWidth || 800, height = svg.clientHeight || 320;
+    const pad = { left: 48, right: 12, top: 10, bottom: 26 };
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    // Aggregated buckets are aligned in UTC, so the first one can start before 'from'; it is clipped to the plot
+    // area instead of being drawn over the axis labels.
+    const clip = svgEl("clipPath", { id: "plot" });
+    clip.append(svgEl("rect", {
+      x: pad.left, y: 0, width: width - pad.left - pad.right, height: height - pad.bottom
+    }));
+    svg.append(clip);
+
+    const points = records
+      .filter(r => r[metric.key] != null)
+      .map(r => ({ t: new Date(r.time).getTime(), v: r[metric.key] }));
+    $("chartInfo").textContent = (points.length ? `${points.length} values` : "No values in this range")
+      + (truncated ? " (too many rows, the oldest values are not shown)" : "");
+    if (!points.length) return;
+
+    let min = Math.min(...points.map(p => p.v)), max = Math.max(...points.map(p => p.v));
+    if (min === max) { min -= 1; max += 1; }
+    const x = t => pad.left + (t - from) / (to - from) * (width - pad.left - pad.right);
+    const y = v => pad.top + (max - v) / (max - min) * (height - pad.top - pad.bottom);
+
+    for (let i = 0; i <= 4; i++) {
+      const v = min + (max - min) * i / 4;
+      svg.append(svgEl("line", { class: "gridline", x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }));
+      svg.append(svgEl("text", { x: pad.left - 6, y: y(v) + 4, "text-anchor": "end" },
+        `${+v.toFixed(1)}${metric.unit ? " " + metric.unit : ""}`));
+    }
+    for (let i = 0; i <= 4; i++) {
+      const t = from + (to - from) * i / 4;
+      const d = new Date(t);
+      const label = hours > 24 ? d.toLocaleDateString(undefined, { day: "numeric", month: "numeric" })
+        + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+        : d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      svg.append(svgEl("text", { x: x(t), y: height - 6, "text-anchor": i === 0 ? "start" : i === 4 ? "end" : "middle" },
+        label));
+    }
+
+    const maxGap = gapThreshold(points);
+    const segments = [[points[0]]];
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].t - points[i - 1].t > maxGap) segments.push([]);
+      segments.at(-1).push(points[i]);
+    }
+
+    const base = y(min);
+    for (const segment of segments) {
+      if (segment.length === 1) {
+        // A lone value between gaps would be invisible as a path.
+        svg.append(svgEl("circle", {
+          class: "point", "clip-path": "url(#plot)", cx: x(segment[0].t), cy: y(segment[0].v), r: 2
+        }));
+        continue;
+      }
+      const path = segment.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("");
+      svg.append(svgEl("path", {
+        class: "area", "clip-path": "url(#plot)",
+        d: `${path}L${x(segment.at(-1).t).toFixed(1)},${base}L${x(segment[0].t).toFixed(1)},${base}Z`
+      }));
+      svg.append(svgEl("path", { class: "line", "clip-path": "url(#plot)", d: path }));
+    }
+  }
+
+  let lastRange = null;
+  // The timer and the range buttons can start overlapping refreshes; only the newest one may render,
+  // otherwise a slow older response (e.g. 7 days) would replace the chart of a newer choice.
+  let refreshId = 0;
+
+  async function refresh() {
+    const id = ++refreshId;
+    const rangeHours = hours;
+    // 'hours' instead of from/to: the server computes the range with its own clock, which also stamps the stored
+    // rows. With the browser clock, a difference between the clocks would cut off rows or make the range invalid.
+    const bucket = BUCKET_MINUTES[rangeHours];
+    const query = `hours=${rangeHours}` + (bucket ? `&bucket=${bucket}` : "");
+    // Independent requests: a failing "latest" must not hide the chart and vice versa.
+    const [latest, range] = await Promise.allSettled([
+      fetchJson("api/weather/latest"),
+      fetchJson(`api/weather?${query}`),
+    ]);
+    if (id !== refreshId) return;
+
+    const errors = [];
+    if (latest.status === "fulfilled") {
+      renderTiles(latest.value.body);
+    } else {
+      errors.push(latest.reason.message);
+    }
+    if (range.status === "fulfilled") {
+      // The axis uses the server time too, so it matches the range the server returned.
+      const to = range.value.serverNow, from = to - rangeHours * 3_600_000;
+      lastRange = { records: range.value.body, from, to, hours: rangeHours, truncated: range.value.truncated };
+      renderChart(lastRange);
+    } else {
+      errors.push(range.reason.message);
+      // The previous chart would look like the newly selected range.
+      lastRange = null;
+      $("chart").replaceChildren();
+      $("chartInfo").textContent = `Chart not available: ${range.reason.message}`;
+    }
+
+    const status = $("status");
+    status.classList.toggle("error", errors.length > 0);
+    status.textContent = errors.length
+      ? [...new Set(errors)].join(" · ")
+      : `Last measurement ${formatTime(latest.value.body.time)}`;
+  }
+
+  metricSelect.addEventListener("change", () => {
+    if (lastRange) renderChart(lastRange);
+  });
+  for (const button of document.querySelectorAll("button[data-hours]")) {
+    button.addEventListener("click", () => {
+      hours = Number(button.dataset.hours);
+      for (const b of document.querySelectorAll("button[data-hours]"))
+        b.setAttribute("aria-pressed", String(b === button));
+      refresh();
+    });
+  }
+  window.addEventListener("resize", () => {
+    if (lastRange) renderChart(lastRange);
+  });
+
+  // A tab in the background does not refresh, it catches up as soon as it is shown again.
+  setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_MS);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  refresh();
+</script>
+</body>
+</html>

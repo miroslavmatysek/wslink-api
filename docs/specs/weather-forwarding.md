@@ -125,7 +125,7 @@ a change of behavior must update this spec, the tests and `README.md` together.
   (`create_hypertable` by `time`). The `compose.yaml` postgres service runs it on volume initialization.
 - `scripts/database/create-database.sql` (psql, superuser, `-v password=...`) sets up an existing server: user
   `wslink`, database `wslink` owned by the superuser (the database owner would own the `public` schema and could
-  drop the table), then `timescaledb.sql`. The user gets only `CONNECT`, `USAGE` on `public` and `INSERT` on
+  drop the table), then `timescaledb.sql`. The user gets only `CONNECT`, `USAGE` on `public` and `INSERT`, `SELECT` on
   `weather_data`; `CREATE` on `public` is revoked from `PUBLIC`. A missing, empty or blank password fails before
   anything is created. Re-running keeps existing objects, their owner and the password.
 - One `INSERT` into `weather_data` per upload (Dapper, parameterized). Column `time` = `TimeProvider` UTC time of
@@ -137,3 +137,45 @@ a change of behavior must update this spec, the tests and `README.md` together.
   `DataProviderException` and the timeout (`OperationCanceledException`) → one Warning with the message and the
   innermost exception message as `Cause` (e.g. `Connection refused`); other exceptions → Error with the exception.
   A failed insert is not retried.
+
+## 8. Preview API (`WeatherHistoryService`, `WeatherDataController`)
+
+- Reads through `IWeatherDataProvider` (`GetLatestAsync`, `GetRangeAsync`, `GetAggregatedRangeAsync`), the same
+  `Postgres` configuration and
+  database user as the adapter; the user needs `SELECT` on `weather_data`.
+- `GET /api/weather/latest`: newest row (`ORDER BY time DESC LIMIT 1`) as `WeatherRecord` = `WeatherStationData`
+  names plus `time` (first, UTC). Missing values are `null` (not omitted, unlike the Home Assistant payload).
+- `GET /api/weather?from&to`: rows with `from <= time < to` ordered by time. `to` defaults to now
+  (`TimeProvider`), `from` to `to - hours` (`hours` 1–168, default 24; `hours` together with `from` → `400`).
+  `from >= to`, a range longer than 7 days or a `to` so early that
+  `to - hours` is not representable → `400`. `from`/`to` are converted to UTC before any arithmetic.
+  At most 20 000 rows, the newest ones (`ORDER BY time DESC LIMIT`, reversed to ascending), so a truncated chart
+  still ends with the latest data; the provider is asked for one row more, and when it returns it, the oldest row is
+  dropped and the response has `X-Result-Truncated: true`.
+- `bucket` (minutes, 1–1440, otherwise `400`) → `GetAggregatedRangeAsync`: `time_bucket(bucket, time)` (UTC
+  aligned), `time` = bucket start; `round(avg, 1)` for most values, `max` for wind gust, rain rate and rainfall,
+  circular mean (`atan2` of averaged sin/cos, rounded before `mod 360`, so 0–359) for wind direction, `bool_or` for `out_sensor_connected`.
+  Same limit, ordering and truncation as the raw rows; empty buckets are not returned.
+- `from`/`to` are bound by ASP.NET Core as `DateTimeOffset`: a value without an offset is the server's local time
+  (UTC in the Docker image), an unencoded `+` in the query string is a space (`400`), so offsets use `%2B`.
+- Storage disabled (adapter config invalid or `Enabled: false`) → `503`. Nothing stored → `404` (latest only).
+  Errors are problem details.
+- Every query is limited to 10 s. `DataProviderException` → `503` and one Warning with the message and the innermost
+  cause; the timeout → `503` and one Warning "timed out" with the timeout. Whether the timeout fired decides the
+  message, not the exception type (Npgsql may report a timed-out read as a `DataProviderException`). A canceled request (client disconnected)
+  is not logged: a `DataProviderException` or `OperationCanceledException` thrown then (Npgsql may report the
+  cancellation as a broken stream) is rethrown as `OperationCanceledException` with the request token, which
+  ASP.NET Core does not log for an aborted request. Other exceptions are not caught, also not for a canceled request
+  (`500`, logged by ASP.NET Core with the exception), so a bug is never hidden.
+- `GET /` serves `wwwroot/index.html` (static files, no external resources): latest values and an SVG chart of one
+  value over 6 h (raw rows) / 24 h (`bucket=2`) / 7 days (`bucket=30`) using the two endpoints, refreshed every 60 s
+  while visible (`document.hidden` skips the refresh, showing the page refreshes at once). It sends `hours`, not
+  `from`/`to`, so the browser clock is not used for the range; the axis ends at the server time from the response
+  `Date` header. Points before the axis start (a UTC-aligned first bucket) are clipped to the plot area. When the
+  range request fails, the chart is cleared and the error shown, so an older range is not presented as the
+  selected one. Points further apart than
+  5 × the median interval (at least 5 min) are not connected, so a gap in the data is not drawn as a line.
+  Only the newest of overlapping refreshes renders; the tiles and the chart fail independently.
+  `color-scheme: light dark`, so native controls follow the theme. API URLs are relative (a sub-path behind a
+  proxy needs the trailing slash).
+- No authentication, like the upload endpoint.

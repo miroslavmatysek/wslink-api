@@ -10,7 +10,7 @@ to Home Assistant, Windy, openHAB and Gladys Assistant (MQTT), and stores it in 
 
 | Project                         | Content                                                                    |
 |---------------------------------|----------------------------------------------------------------------------|
-| `src/WsLink.Api`                | Host, controller, `appsettings.json`, `nlog.config`, version               |
+| `src/WsLink.Api`                | Host, controllers (upload, preview API), `wwwroot` preview page, `appsettings.json`, `nlog.config`, version |
 | `src/WsLink.Business`           | `WeatherService`, adapters (`Adapters/`), MQTT publisher (`Mqtt/`), DI     |
 | `src/WsLink.Common`             | Contracts (`WsLinkRequestParam`, `WeatherStationData`), config classes, interfaces (incl. `IWeatherDataProvider`) |
 | `tests/WsLink.Business.Tests`   | Unit tests (xUnit v4)                                                      |
@@ -23,6 +23,8 @@ goes through interfaces in `WsLink.Common/DataProvider` (`IWeatherDataProvider`,
 Flow: `WsLinkDataController` → `WeatherService.SaveWeatherData` (rounding, outdoor sensor handling) →
 all enabled `IWeatherAdapter`s in parallel (`Task.WhenAll`). `AdapterFactory` returns enabled adapters,
 or `DummyWeatherAdapter` (logs only) when none is enabled.
+Preview: `WeatherDataController` (`/api/weather`) → `WeatherHistoryService` → `IWeatherDataProvider` (reads),
+static page `wwwroot/index.html` at `/`.
 
 Behavioral rules (rounding, missing values, timeouts, logging levels) are specified in
 `docs/specs/weather-forwarding.md`. Keep code, tests and that spec consistent.

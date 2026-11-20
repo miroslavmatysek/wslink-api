@@ -19,6 +19,9 @@ How it works:
 | Endpoint                    | Description                                      |
 |-----------------------------|--------------------------------------------------|
 | `GET/POST /data/upload.php` | Weather station upload (query string parameters) |
+| `GET /api/weather/latest`   | Newest stored measurement, see [Preview](#preview) |
+| `GET /api/weather`          | Stored measurements in a time range, see [Preview](#preview) |
+| `GET /`                     | Preview page (latest values and a chart)         |
 | `GET /health`               | Health check                                     |
 
 Example requests are in `src/WsLink.Api/WsLink.Api.http`.
@@ -169,7 +172,8 @@ hypertable partitioned by `time`. Suitable e.g. as a Grafana data source.
 
 - The service does not create the database or the table. On an existing PostgreSQL server with the TimescaleDB
   extension installed, run `scripts/database/create-database.sql` once as a superuser. It creates the user and
-  database `wslink`, the `weather_data` table (`scripts/database/timescaledb.sql`) and grants the user only `INSERT`:
+  database `wslink`, the `weather_data` table (`scripts/database/timescaledb.sql`) and grants the user only
+  `INSERT` and `SELECT` (`SELECT` for the [preview](#preview)):
 
   ```sh
   psql -h postgres.local -U postgres -d postgres -v password='<password of wslink>' -f scripts/database/create-database.sql
@@ -190,6 +194,43 @@ hypertable partitioned by `time`. Suitable e.g. as a Grafana data source.
 - Every upload is inserted (no rate limit), the insert is limited to 10 s, a failure is logged as a single warning.
   A failed insert is not retried, the row is missing.
 - Configuration can be set via environment variables, e.g. `Postgres__ConnectionString=...`.
+
+### Preview
+
+With the [PostgreSQL storage](#postgresql--timescaledb) enabled, the stored data can be read back. Open
+`http://<service>:8080/` for a page with the latest values and a chart (6 h, 24 h or 7 days, refreshed every minute
+while the page is visible; 24 h and 7 days are averaged over 2 and 30 minutes). The page has no external
+dependencies, so it works on a network without internet access. Open it with a trailing slash when it is behind
+a reverse proxy at a sub-path (`https://host/weather/`), the API URLs are relative. The same data is available as
+JSON:
+
+- `GET /api/weather/latest` returns the newest measurement: `time` (UTC, time of receipt) and the values with the
+  [Home Assistant](#home-assistant) payload names; missing values are `null`.
+- `GET /api/weather?from=2026-11-20T00:00:00Z&to=2026-11-21T00:00:00Z` returns an array of measurements with
+  `from <= time < to`, ordered by time. `from` and `to` are ISO 8601 times; `to` defaults to now, `from` to
+  24 hours before `to`. The range must not be longer than 7 days. At most 20 000 rows are returned (the newest ones,
+  so a chart always ends with the latest data), a longer result has the response header `X-Result-Truncated: true`.
+- `GET /api/weather?hours=6` returns the last 6 hours (1–168) before `to` (default now) instead of `from`; the
+  server computes the range with its own clock, which also stamps the stored rows. `hours` and `from` cannot be
+  combined.
+- `GET /api/weather?hours=168&bucket=30` returns one record per 30 minutes instead (`bucket` in minutes, 1–1440,
+  `time` = bucket start in UTC). Use it for long ranges: a week every 30 s is about 20 000 rows (several MB),
+  with `bucket=30` it is 336 records. Values are averaged (rounded to one decimal place); wind gust, rain rate and
+  rainfall use the maximum; wind direction is the circular mean (359° and 1° give 0°); `out_sensor_connected` is
+  `true` when the sensor was connected at least once in the bucket. Buckets without a value are missing.
+
+  Give the time with `Z` or an offset. A `+` in the query string must be URL-encoded as `%2B`
+  (`from=2026-11-20T00:00:00%2B01:00`), an unencoded `+` is read as a space and the request fails with `400`.
+  A time without an offset is taken as the local time of the server (UTC in the Docker image).
+
+Errors are returned as [problem details](https://www.rfc-editor.org/rfc/rfc9457): `400` for an invalid range,
+`404` when nothing is stored yet, `503` when the storage is disabled or the database is not reachable
+(a database failure or a timeout is logged as a single warning, a query is limited to 10 s). The endpoints and the page have
+no authentication, like the rest of the service; expose the service only on a trusted network.
+
+The database user needs `SELECT` on `weather_data`. `scripts/database/create-database.sql` grants it; on a
+database set up by an older version of the script, run it again or grant it manually:
+`GRANT SELECT ON weather_data TO wslink;`.
 
 ## Running
 

@@ -40,6 +40,9 @@ public class Program
             app.MapOpenApi();
         }
 
+        // Preview page (wwwroot/index.html) reading the /api/weather endpoints.
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
         app.UseAuthorization();
         app.UseHealthChecks("/health");
 

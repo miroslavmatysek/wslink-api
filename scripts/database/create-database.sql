@@ -1,5 +1,5 @@
 -- Creates the database user and database for the Postgres adapter of WsLink.Api, the weather_data table
--- (timescaledb.sql in this folder) and grants the user only INSERT on it.
+-- (timescaledb.sql in this folder) and grants the user only INSERT and SELECT on it (SELECT for the preview API).
 -- Run with psql as a superuser (the TimescaleDB extension can be created only by a superuser), e.g.
 --   psql -h <host> -U postgres -d postgres -v password='<password of wslink>' -f scripts/database/create-database.sql
 -- The password is passed as a psql variable, so it is not stored in this file. Safe to run again:
@@ -34,7 +34,7 @@ GRANT CONNECT ON DATABASE wslink TO wslink;
 -- Path relative to this file (same folder), so the script works from any working directory.
 \ir timescaledb.sql
 
--- The service only inserts, so it gets no other privilege on the table or the schema.
+-- The service inserts and reads (preview API), so it gets no other privilege on the table or the schema.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO wslink;
-GRANT INSERT ON weather_data TO wslink;
+GRANT INSERT, SELECT ON weather_data TO wslink;
